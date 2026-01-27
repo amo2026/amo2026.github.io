@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>欢迎！我的网站</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .url {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 1.2em;
+            word-break: break-all;
+        }
+        .btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .btn:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎊 网站创建成功！</h1>
+        <p>这是你的第一个GitHub Pages网站</p>
+        
+        <div class="url">
+            https://amo2026.github.io
+        </div>
+        
+        <p>✨ 完全免费 ✨ 全球访问 ✨ 随时修改</p>
+        
+        <h3>💡 如何修改网站？</h3>
+        <p>1. 回到GitHub仓库页面</p>
+        <p>2. 找到 index.html 文件</p>
+        <p>3. 点击编辑（铅笔图标）</p>
+        <p>4. 修改内容 → 提交 → 等待30秒生效</p>
+        
+        <a href="https://amo2026.github.io" class="btn" target="_blank">
+            立即访问我的网站
+        </a>
+    </div>
+    
+    <script>
+        // 显示当前时间
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            const timeStr = now.toLocaleString('zh-CN');
+            const timeEl = document.createElement('p');
+            timeEl.innerHTML = `🕐 页面生成时间：${timeStr}`;
+            timeEl.style.color = '#666';
+            timeEl.style.marginTop = '30px';
+            document.querySelector('.container').appendChild(timeEl);
+        });
+    </script>
+</body>
+</html>
