@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>福彩3D直选过滤</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            padding: 10px;
+            font-size: 14px;
+        }
+        
+        .container {
+            max-width: 100%;
+        }
+        
+        .header {
+            background-color: #4a6bff;
+            padding: 12px;
+            margin-bottom: 10px;
+            color: white;
+            text-align: center;
+            border-radius: 5px;
+        }
+        
+        .header h1 {
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+        
+        .section {
+            background-color: white;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #4a6bff;
+            margin-bottom: 10px;
+        }
+        
+        .input-area {
+            width: 100%;
+            min-height: 100px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            resize: vertical;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+        
+        .period-selector {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        
+        .period-option {
+            flex: 1;
+        }
+        
+        .period-option input {
+            display: none;
+        }
+        
+        .period-label {
+            display: block;
+            padding: 8px 2px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.8rem;
+            border: 1px solid #ccc;
+        }
+        
+        .period-option input:checked + .period-label {
+            background-color: #4a6bff;
+            color: white;
+            border-color: #4a6bff;
+        }
+        
+        .btn-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 10px 6px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background-color: #4a6bff;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #ccc;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn-info {
+            background-color: #17a2b8;
+            color: white;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            background-color: #f8f9ff;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #4a6bff;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: #666;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        
+        .numbers-container {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .numbers-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+        
+        .number-item {
+            position: relative;
+        }
+        
+        .number-checkbox {
+            display: none;
+        }
+        
+        .number-label {
+            display: block;
+            padding: 8px 2px;
+            background-color: white;
+            border-radius: 3px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border: 1px solid #e0e0e0;
+            color: #333;
+        }
+        
+        .number-label::before {
+            content: "□";
+            margin-right: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .number-checkbox:checked + .number-label::before {
+            content: "✓";
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 10px 0;
+            color: #666;
+            font-size: 0.75rem;
+        }
+        
+        .hint {
+            background-color: #fff3cd;
+            padding: 8px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #856404;
+        }
+        
+        /* 消息提示框 */
+        .message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4a6bff;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .message-box.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 标题 -->
+        <div class="header">
+            <h1>福彩3D直选过滤</h1>
+            <p>输入历史开奖号码，过滤剩余直选</p>
+        </div>
+        
+        <!-- 数据输入区域 -->
+        <div class="section">
+            <div class="section-title">历史开奖数据</div>
+            <textarea class="input-area" id="historyData" placeholder="请粘贴历史开奖号码，格式如下：
+
+2024009    265
+2024010    437
+2024011    927
+2024012    590
+
+注意：每行一个开奖记录，期号和号码之间用Tab键或空格分隔。"></textarea>
+            
+            <div class="hint">
+                如果没有数据，点击"开始计算"将使用示例数据进行演示。
+            </div>
+        </div>
+        
+        <!-- 过滤设置区域 -->
+        <div class="section">
+            <div class="section-title">过滤设置</div>
+            
+            <!-- 期数选择 - 并排按钮 -->
+            <div class="period-selector">
+                <div class="period-option">
+                    <input type="radio" id="period50" name="period" value="50" checked>
+                    <label class="period-label" for="period50">50期</label>
+                </div>
+                <div class="period-option">
+                    <input type="radio" id="period150" name="period" value="150">
+                    <label class="period-label" for="period150">150期</label>
+                </div>
+                <div class="period-option">
+                    <input type="radio" id="period300" name="period" value="300">
+                    <label class="period-label" for="period300">300期</label>
+                </div>
+                <div class="period-option">
+                    <input type="radio" id="period500" name="period" value="500">
+                    <label class="period-label" for="period500">500期</label>
+                </div>
+                <div class="period-option">
+                    <input type="radio" id="period1000" name="period" value="1000">
+                    <label class="period-label" for="period1000">1000期</label>
+                </div>
+            </div>
+            
+            <div class="btn-row">
+                <button class="btn btn-primary" id="calculateBtn">开始计算</button>
+                <button class="btn btn-secondary" id="clearBtn">清空</button>
+            </div>
+        </div>
+        
+        <!-- 结果显示区域 -->
+        <div class="section">
+            <div class="section-title">过滤结果</div>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="remainingCount">1000</div>
+                    <div class="stat-label">剩余注数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="selectedCount">0</div>
+                    <div class="stat-label">已选择</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalPrice">0</div>
+                    <div class="stat-label">总金额(元)</div>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-secondary" id="selectAllBtn">全选</button>
+                <button class="btn btn-secondary" id="deselectAllBtn">取消全选</button>
+                <button class="btn btn-secondary" id="deleteSelectedBtn">删除所选</button>
+                <button class="btn btn-secondary" id="keepSelectedBtn">保留所选</button>
+            </div>
+            
+            <div class="numbers-container">
+                <div class="numbers-grid" id="numbersGrid">
+                    <!-- 号码将通过JavaScript动态生成 -->
+                </div>
+            </div>
+            
+            <div class="btn-row">
+                <button class="btn btn-info" id="copyAllBtn">复制全部</button>
+                <button class="btn btn-info" id="copySelectedBtn">复制所选</button>
+            </div>
+        </div>
+        
+        <!-- 底部信息 -->
+        <div class="footer">
+            福彩3D直选过滤工具 &copy; 2024 | 理性购彩，仅供参考
+        </div>
+    </div>
+
+    <!-- 消息提示框 -->
+    <div class="message-box" id="messageBox"></div>
+
+    <script>
+        // 初始化所有可能的直选号码 (000-999)
+        let allNumbers = Array.from({length: 1000}, (_, i) => i.toString().padStart(3, '0'));
+        let currentNumbers = [...allNumbers];
+        let selectedNumbers = new Set();
+        
+        // DOM元素
+        const historyDataEl = document.getElementById('historyData');
+        const numbersGridEl = document.getElementById('numbersGrid');
+        const remainingCountEl = document.getElementById('remainingCount');
+        const selectedCountEl = document.getElementById('selectedCount');
+        const totalPriceEl = document.getElementById('totalPrice');
+        const messageBox = document.getElementById('messageBox');
+        
+        // 示例数据
+        const sampleData = `2024009\t265
+2024010\t437
+2024011\t927
+2024012\t590
+2024013\t468
+2024014\t251
+2024015\t438
+2024016\t920
+2024017\t659
+2024018\t347`;
+        
+        // 生成号码显示 - 每行5个数字
+        function renderNumbers() {
+            numbersGridEl.innerHTML = '';
+            
+            if (currentNumbers.length === 0) {
+                numbersGridEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:#666; font-size:0.9rem;">没有符合条件的号码</div>';
+            } else {
+                currentNumbers.forEach(number => {
+                    const isSelected = selectedNumbers.has(number);
+                    
+                    const numberItem = document.createElement('div');
+                    numberItem.className = 'number-item';
+                    
+                    numberItem.innerHTML = `
+                        <input type="checkbox" class="number-checkbox" id="num_${number}" ${isSelected ? 'checked' : ''}>
+                        <label class="number-label" for="num_${number}">${number}</label>
+                    `;
+                    
+                    numbersGridEl.appendChild(numberItem);
+                });
+            }
+            
+            // 更新统计信息
+            updateStats();
+            
+            // 添加事件监听器
+            document.querySelectorAll('.number-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const number = this.id.replace('num_', '');
+                    
+                    if (this.checked) {
+                        selectedNumbers.add(number);
+                    } else {
+                        selectedNumbers.delete(number);
+                    }
+                    
+                    updateStats();
+                });
+            });
+        }
+        
+        // 更新统计信息
+        function updateStats() {
+            remainingCountEl.textContent = currentNumbers.length;
+            selectedCountEl.textContent = selectedNumbers.size;
+            totalPriceEl.textContent = (selectedNumbers.size * 2).toFixed(0);
+        }
+        
+        // 解析历史数据
+        function parseHistoryData() {
+            let data = historyDataEl.value.trim();
+            
+            // 如果输入为空，返回空数组
+            if (!data) {
+                return [];
+            }
+            
+            const lines = data.split('\n');
+            const numbers = [];
+            
+            lines.forEach(line => {
+                const trimmedLine = line.trim();
+                if (trimmedLine) {
+                    // 提取后三位作为号码
+                    const parts = trimmedLine.split(/\s+/);
+                    if (parts.length >= 2) {
+                        const number = parts[1];
+                        if (/^\d{3}$/.test(number)) {
+                            numbers.push(number);
+                        }
+                    } else {
+                        // 如果只有号码没有期号
+                        const numberMatch = trimmedLine.match(/\d{3}/);
+                        if (numberMatch) {
+                            numbers.push(numberMatch[0]);
+                        }
+                    }
+                }
+            });
+            
+            return numbers;
+        }
+        
+        // 过滤号码
+        function filterNumbers() {
+            // 获取选中的期数
+            const selectedPeriod = document.querySelector('input[name="period"]:checked').value;
+            const period = parseInt(selectedPeriod);
+            
+            // 解析历史数据
+            let historyNumbers = parseHistoryData();
+            
+            // 如果用户没有输入数据，使用示例数据
+            let recentNumbers = [];
+            if (historyNumbers.length === 0) {
+                // 解析示例数据
+                const sampleLines = sampleData.split('\n');
+                sampleLines.forEach(line => {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine) {
+                        const parts = trimmedLine.split(/\s+/);
+                        if (parts.length >= 2) {
+                            recentNumbers.push(parts[1]);
+                        }
+                    }
+                });
+                recentNumbers = recentNumbers.slice(-period);
+                showMessage(`使用示例数据（${recentNumbers.length}个历史号码）进行计算`);
+            } else {
+                // 获取最近period期的号码
+                recentNumbers = historyNumbers.slice(-period);
+            }
+            
+            // 从所有号码中排除已开出的号码
+            currentNumbers = allNumbers.filter(number => !recentNumbers.includes(number));
+            
+            // 清空已选择的号码
+            selectedNumbers.clear();
+            
+            // 重新渲染号码
+            renderNumbers();
+            
+            // 显示提示信息
+            if (historyNumbers.length > 0) {
+                showMessage(`已过滤掉${recentNumbers.length}个历史号码，剩余${currentNumbers.length}个直选`);
+            }
+        }
+        
+        // 显示消息提示
+        function showMessage(message) {
+            messageBox.textContent = message;
+            messageBox.classList.add('show');
+            
+            // 3秒后隐藏
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 复制文本到剪贴板
+        function copyToClipboard(text) {
+            // 创建一个临时的textarea元素
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            
+            // 选择文本
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); // 对于移动设备
+            
+            // 复制文本
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showMessage('已复制到剪贴板');
+                } else {
+                    showMessage('复制失败，请手动选择复制');
+                }
+            } catch (err) {
+                console.error('复制失败:', err);
+                showMessage('复制失败，请手动选择复制');
+            }
+            
+            // 移除临时元素
+            document.body.removeChild(textarea);
+        }
+        
+        // 生成要复制的文本 - 每行7个数字
+        function generateCopyText(numbers) {
+            if (numbers.length === 0) {
+                return "";
+            }
+            
+            let text = "";
+            
+            // 每7个数字为一行
+            for (let i = 0; i < numbers.length; i++) {
+                text += numbers[i];
+                
+                // 如果不是最后一个数字
+                if (i < numbers.length - 1) {
+                    // 每7个数字换行
+                    if ((i + 1) % 7 === 0) {
+                        text += "\n";
+                    } else {
+                        text += " ";
+                    }
+                }
+            }
+            
+            return text;
+        }
+        
+        // 事件监听器
+        document.getElementById('calculateBtn').addEventListener('click', filterNumbers);
+        
+        document.getElementById('clearBtn').addEventListener('click', function() {
+            historyDataEl.value = '';
+            currentNumbers = [...allNumbers];
+            selectedNumbers.clear();
+            renderNumbers();
+            showMessage('已清空数据，恢复所有1000个直选号码');
+        });
+        
+        document.getElementById('selectAllBtn').addEventListener('click', function() {
+            currentNumbers.forEach(number => selectedNumbers.add(number));
+            renderNumbers();
+            showMessage(`已全选${currentNumbers.length}个号码`);
+        });
+        
+        document.getElementById('deselectAllBtn').addEventListener('click', function() {
+            selectedNumbers.clear();
+            renderNumbers();
+            showMessage('已取消所有选择');
+        });
+        
+        document.getElementById('deleteSelectedBtn').addEventListener('click', function() {
+            if (selectedNumbers.size === 0) {
+                showMessage('请先选择要删除的号码');
+                return;
+            }
+            
+            const deletedCount = selectedNumbers.size;
+            currentNumbers = currentNumbers.filter(number => !selectedNumbers.has(number));
+            selectedNumbers.clear();
+            renderNumbers();
+            showMessage(`已删除${deletedCount}个号码`);
+        });
+        
+        document.getElementById('keepSelectedBtn').addEventListener('click', function() {
+            if (selectedNumbers.size === 0) {
+                showMessage('请先选择要保留的号码');
+                return;
+            }
+            
+            const keptCount = selectedNumbers.size;
+            currentNumbers = currentNumbers.filter(number => selectedNumbers.has(number));
+            selectedNumbers.clear();
+            renderNumbers();
+            showMessage(`已保留${keptCount}个号码`);
+        });
+        
+        // 复制全部按钮
+        document.getElementById('copyAllBtn').addEventListener('click', function() {
+            if (currentNumbers.length === 0) {
+                showMessage('没有号码可以复制');
+                return;
+            }
+            
+            const text = generateCopyText(currentNumbers);
+            copyToClipboard(text);
+        });
+        
+        // 复制所选按钮
+        document.getElementById('copySelectedBtn').addEventListener('click', function() {
+            if (selectedNumbers.size === 0) {
+                showMessage('请先选择要复制的号码');
+                return;
+            }
+            
+            const text = generateCopyText(Array.from(selectedNumbers));
+            copyToClipboard(text);
+        });
+        
+        // 初始化页面
+        renderNumbers();
+    </script>
+</body>
+</html>
