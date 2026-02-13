@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>福彩3D双工具 · 精简版</title>
+    <style>
+        /* 全局导航样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            min-height: 100vh;
+            padding: 12px 10px;
+        }
+        .nav-bar {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 16px;
+            background: white;
+            border-radius: 16px;
+            padding: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .nav-btn {
+            flex: 1;
+            padding: 12px 6px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            background: transparent;
+            color: #5a6e85;
+            cursor: pointer;
+            transition: all 0.2s;
+            touch-action: manipulation;
+            white-space: nowrap;
+        }
+        .nav-btn.active {
+            background: #7f8fa6;
+            color: white;
+            box-shadow: 0 2px 6px rgba(127,143,166,0.3);
+        }
+        .tool-wrapper {
+            display: none;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            padding: 0;
+        }
+        .tool-wrapper.active {
+            display: block;
+        }
+        .tool1-container, .tool2-container {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航按钮 -->
+    <div class="nav-bar">
+        <button class="nav-btn active" id="btnTool1">🎯 交集计算</button>
+        <button class="nav-btn" id="btnTool2">🔍 直选过滤</button>
+    </div>
+
+    <!-- 工具1：交集计算系统（按钮文字修改：复制/下载/删除） -->
+    <div id="tool1-wrapper" class="tool-wrapper active">
+        <div class="tool1-container">
+            <style>
+                .tool1-container {
+                    all: initial;
+                    display: block;
+                    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                    color: #333;
+                    line-height: 1.4;
+                    font-size: 13px;
+                    background: white;
+                    padding: 12px;
+                }
+                .tool1-container * {
+                    box-sizing: border-box;
+                    -webkit-tap-highlight-color: transparent;
+                    -webkit-user-select: none;
+                    user-select: none;
+                }
+                .tool1-container textarea {
+                    -webkit-user-select: text;
+                    user-select: text;
+                }
+                .tool1-container .card {
+                    background: white;
+                    border-radius: 8px;
+                    padding: 12px 0;
+                    box-shadow: none;
+                    margin-bottom: 12px;
+                }
+                .tool1-container .textarea-container {
+                    position: relative;
+                    margin-bottom: 8px;
+                }
+                .tool1-container textarea {
+                    width: 100%;
+                    height: 70px;
+                    padding: 8px;
+                    border: 1.5px solid #e1e8ed;
+                    border-radius: 6px;
+                    font-size: 13px;
+                    resize: vertical;
+                    transition: border-color 0.2s;
+                    line-height: 1.3;
+                }
+                .tool1-container textarea:focus {
+                    outline: none;
+                    border-color: #7f8fa6;
+                }
+                .tool1-container .textarea-label {
+                    display: block;
+                    margin-bottom: 5px;
+                    font-weight: 600;
+                    color: #2c3e50;
+                    font-size: 0.85rem;
+                }
+                .tool1-container .input-count {
+                    position: absolute;
+                    top: 8px;
+                    right: 10px;
+                    font-size: 0.7rem;
+                    color: #7f8c8d;
+                    background: rgba(255,255,255,0.9);
+                    padding: 1px 5px;
+                    border-radius: 6px;
+                }
+                .tool1-container .btn {
+                    padding: 10px 12px;
+                    border: none;
+                    border-radius: 6px;
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 4px;
+                    width: 100%;
+                    margin-bottom: 6px;
+                    touch-action: manipulation;
+                }
+                .tool1-container .btn-sm {
+                    padding: 5px 8px;
+                    font-size: 0.75rem;
+                    width: auto;
+                    margin: 0;
+                }
+                .tool1-container .btn-outline {
+                    background: transparent;
+                    color: #7f8fa6;
+                    border: 1.5px solid #7f8fa6;
+                }
+                .tool1-container .btn-outline:active {
+                    background: #7f8fa6;
+                    color: white;
+                    transform: translateY(1px);
+                }
+                .tool1-container .btn-success {
+                    background: linear-gradient(to right, #9fb7c9, #7f8fa6);
+                    color: white;
+                }
+                .tool1-container .btn-danger {
+                    background: linear-gradient(to right, #e74c3c, #c0392b);
+                    color: white;
+                }
+                .tool1-container .button-row {
+                    display: flex;
+                    gap: 6px;
+                }
+                .tool1-container .button-row .btn {
+                    flex: 1;
+                    margin-bottom: 0;
+                }
+                .tool1-container .condition-option-group {
+                    background: #f0f7fa;
+                    border-radius: 8px;
+                    padding: 12px;
+                    margin-top: 15px;
+                    margin-bottom: 15px;
+                    border: 1px solid #d9e6f2;
+                }
+                .tool1-container .option-title {
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    color: #2c3e50;
+                    margin-bottom: 10px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+                .tool1-container .radio-group {
+                    display: flex;
+                    gap: 20px;
+                    margin-bottom: 12px;
+                }
+                .tool1-container .radio-label, .tool1-container .checkbox-label {
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    font-size: 0.85rem;
+                    color: #333;
+                }
+                .tool1-container .checkbox-group {
+                    display: flex;
+                    gap: 16px;
+                    flex-wrap: wrap;
+                    margin-bottom: 8px;
+                }
+                .tool1-container .position-filter-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin-bottom: 10px;
+                }
+                .tool1-container .position-filter-header i {
+                    width: 24px;
+                    height: 24px;
+                    background: #e1f0ff;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #7f8fa6;
+                    font-size: 0.8rem;
+                }
+                .tool1-container .compact-position-selector {
+                    margin: 10px 0;
+                    padding: 10px;
+                    background: #f8fafc;
+                    border-radius: 6px;
+                    border: 1px solid #eef2f7;
+                }
+                .tool1-container .position-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 8px;
+                }
+                .tool1-container .position-header h4 {
+                    font-size: 0.85rem;
+                    color: #2c3e50;
+                    font-weight: 600;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+                .tool1-container .single-line-numbers {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 4px;
+                    overflow-x: auto;
+                    padding: 4px 0;
+                    scrollbar-width: none;
+                }
+                .tool1-container .single-line-numbers::-webkit-scrollbar { display: none; }
+                .tool1-container .number-btn-small {
+                    flex: 0 0 26px;
+                    height: 26px;
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background-color: #f8fafc;
+                    color: #7f8fa6;
+                    border: 1px solid #e1e8ed;
+                    touch-action: manipulation;
+                }
+                .tool1-container .number-btn-small.selected {
+                    background: linear-gradient(to bottom right, #7f8fa6, #6b7b93);
+                    color: white;
+                    border-color: #6b7b93;
+                }
+                .tool1-container .number-btn-small.kill-selected {
+                    background: linear-gradient(to bottom right, #e74c3c, #c0392b);
+                    color: white;
+                    border-color: #c0392b;
+                }
+                .tool1-container .badge {
+                    display: inline-block;
+                    padding: 2px 6px;
+                    border-radius: 8px;
+                    font-size: 0.7rem;
+                    font-weight: 600;
+                    margin-left: 4px;
+                }
+                .tool1-container .badge-blue {
+                    background-color: #e1f0ff;
+                    color: #7f8fa6;
+                }
+                .tool1-container .badge-red {
+                    background-color: #fdeaea;
+                    color: #e74c3c;
+                }
+                .tool1-container .results-container {
+                    margin-top: 15px;
+                }
+                .tool1-container .results-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 8px;
+                    padding: 6px 10px;
+                    background: #f0f7ff;
+                    border-radius: 6px;
+                }
+                .tool1-container .results-count, .tool1-container .results-price {
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                }
+                .tool1-container .results-count span {
+                    color: #7f8fa6;
+                    font-size: 0.95rem;
+                }
+                .tool1-container .results-price span {
+                    color: #27ae60;
+                    font-size: 0.95rem;
+                }
+                .tool1-container .results-display {
+                    background: #f8f9fa;
+                    border-radius: 6px;
+                    padding: 8px;
+                    min-height: 80px;
+                    max-height: 300px;
+                    overflow-y: auto;
+                    border: 1px dashed #ced4da;
+                    font-family: 'Consolas', 'Monaco', monospace;
+                    line-height: 1.5;
+                    white-space: pre-wrap;
+                    font-size: 12px;
+                    word-break: break-all;
+                }
+                .tool1-container .results-placeholder {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100%;
+                    min-height: 60px;
+                    color: #7f8c8d;
+                    font-size: 0.85rem;
+                }
+                .tool1-container .number-item {
+                    display: inline-block;
+                    margin: 1px 2px;
+                    padding: 3px 6px;
+                    background: white;
+                    border: 1px solid #e1e8ed;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    position: relative;
+                    font-size: 12px;
+                }
+                .tool1-container .number-item.selected {
+                    background: #fff3cd;
+                    border-color: #ffc107;
+                    color: #856404;
+                }
+                .tool1-container .number-item .delete-btn {
+                    position: absolute;
+                    top: -6px;
+                    right: -6px;
+                    width: 16px;
+                    height: 16px;
+                    background: #e74c3c;
+                    color: white;
+                    border-radius: 50%;
+                    display: none;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 10px;
+                    cursor: pointer;
+                }
+                .tool1-container .number-item.selected .delete-btn {
+                    display: flex;
+                }
+                .tool1-container .remove-input-btn {
+                    position: absolute;
+                    bottom: 8px;
+                    right: 10px;
+                    background: #fee;
+                    color: #c0392b;
+                    border: 1px solid #f5c6cb;
+                    border-radius: 4px;
+                    padding: 3px 6px;
+                    font-size: 0.7rem;
+                    cursor: pointer;
+                }
+            </style>
+            <!-- 工具1核心内容 -->
+            <div class="tool1-container">
+                <div class="textarea-container">
+                    <label class="textarea-label">条件 1 (3D号码，空格分隔):</label>
+                    <textarea id="input1" placeholder="322 352 235 253 532 523 327"></textarea>
+                    <div class="input-count">号码数: <span id="count1">0</span></div>
+                </div>
+                <div class="textarea-container">
+                    <label class="textarea-label">条件 2 (3D号码，空格分隔):</label>
+                    <textarea id="input2" placeholder="315 352 235 253 532 523 377"></textarea>
+                    <div class="input-count">号码数: <span id="count2">0</span></div>
+                </div>
+                <div id="intersection-inputs"></div>
+                
+                <div class="button-row">
+                    <button class="btn btn-outline" id="add-input"><i class="fas fa-plus"></i> 添加条件</button>
+                    <button class="btn btn-outline" id="clear-inputs"><i class="fas fa-broom"></i> 清空条件</button>
+                </div>
+
+                <!-- 条件选项卡片 -->
+                <div class="condition-option-group">
+                    <div class="option-title"><i class="fas fa-sliders-h"></i> 条件选项</div>
+                    <div class="radio-group">
+                        <label class="radio-label"><input type="radio" name="generateType" value="direct" checked> 生成所有直选</label>
+                        <label class="radio-label"><input type="radio" name="generateType" value="group"> 生成所有组选</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" id="includeG3" checked> 包含组三</label>
+                        <label class="checkbox-label"><input type="checkbox" id="includeG6" checked> 包含组六</label>
+                        <label class="checkbox-label"><input type="checkbox" id="includeBZ" checked> 包含豹子</label>
+                    </div>
+                </div>
+
+                <!-- 定位筛选 -->
+                <div style="margin-top:5px;">
+                    <div class="position-filter-header">
+                        <i class="fas fa-bullseye"></i>
+                        <span style="font-weight:600; color:#2c3e50;">定位筛选</span>
+                    </div>
+                    <!-- 百位 -->
+                    <div class="compact-position-selector">
+                        <div class="position-header">
+                            <h4>百位 <span class="badge badge-blue">选号</span><span class="badge badge-red">杀号</span></h4>
+                            <button class="btn btn-outline btn-sm clear-position" data-position="hundred">清空</button>
+                        </div>
+                        <div class="single-line-numbers" id="hundred"></div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.65rem; color:#888; margin-top:2px;">
+                            <span>点击选号</span><span>长按杀号</span>
+                        </div>
+                    </div>
+                    <!-- 十位 -->
+                    <div class="compact-position-selector">
+                        <div class="position-header">
+                            <h4>十位 <span class="badge badge-blue">选号</span><span class="badge badge-red">杀号</span></h4>
+                            <button class="btn btn-outline btn-sm clear-position" data-position="ten">清空</button>
+                        </div>
+                        <div class="single-line-numbers" id="ten"></div>
+                    </div>
+                    <!-- 个位 -->
+                    <div class="compact-position-selector">
+                        <div class="position-header">
+                            <h4>个位 <span class="badge badge-blue">选号</span><span class="badge badge-red">杀号</span></h4>
+                            <button class="btn btn-outline btn-sm clear-position" data-position="unit">清空</button>
+                        </div>
+                        <div class="single-line-numbers" id="unit"></div>
+                    </div>
+                    <!-- 清空所有定位条件 -->
+                    <div style="display:flex; justify-content:center; margin-top:10px;">
+                        <label style="display:flex; align-items:center; gap:6px; font-size:0.8rem;">
+                            <input type="checkbox" id="clear-all-conditions"> 清空所有定位条件
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 计算按钮 -->
+                <div style="margin-top:15px;">
+                    <button class="btn btn-success" id="calculate-intersection">
+                        <i class="fas fa-calculator"></i> 计算交集
+                    </button>
+                </div>
+
+                <!-- 结果显示区 -->
+                <div class="results-container">
+                    <div class="results-header">
+                        <div class="results-count">共 <span id="result-count">0</span> 注</div>
+                        <div class="results-price">总价: <span id="result-price">0</span> 元 (2元/注)</div>
+                    </div>
+                    <div style="font-size:0.75rem; color:#666; margin-bottom:5px;">
+                        <i class="fas fa-info-circle"></i> 点击号码可选中，点击右上角×可删除
+                    </div>
+                    <div class="results-display" id="intersection-results">
+                        <div class="results-placeholder">等待计算结果...</div>
+                    </div>
+                    <div class="button-row" style="margin-top:10px;">
+                        <!-- 修改按钮文字：复制 / 下载 / 删除 -->
+                        <button class="btn btn-outline" id="copy-results"><i class="fas fa-copy"></i> 复制</button>
+                        <button class="btn btn-outline" id="export-results"><i class="fas fa-download"></i> 下载</button>
+                        <button class="btn btn-danger" id="delete-selected"><i class="fas fa-trash"></i> 删除</button>
+                    </div>
+                </div>
+            </div>
+            <!-- 工具1脚本（保持不变，但需确保按钮ID正确） -->
+            <script>
+                (function() {
+                    let currentResults = [];
+                    function initNumberSelectors() {
+                        const positions = ['hundred', 'ten', 'unit'];
+                        positions.forEach(pos => {
+                            const container = document.getElementById(pos);
+                            if (!container) return;
+                            container.innerHTML = '';
+                            for (let i = 0; i <= 9; i++) {
+                                const btn = document.createElement('button');
+                                btn.className = 'number-btn-small';
+                                btn.textContent = i;
+                                btn.dataset.number = i;
+                                let timer, isLongPress = false;
+                                btn.addEventListener('contextmenu', e => e.preventDefault());
+                                btn.addEventListener('click', function(e) {
+                                    if (!isLongPress) {
+                                        if (this.classList.contains('kill-selected')) {
+                                            this.classList.remove('kill-selected');
+                                        } else if (this.classList.contains('selected')) {
+                                            this.classList.remove('selected');
+                                        } else {
+                                            this.classList.add('selected');
+                                        }
+                                    }
+                                    isLongPress = false;
+                                });
+                                const startLongPress = function(e) {
+                                    timer = setTimeout(() => {
+                                        isLongPress = true;
+                                        if (this.classList.contains('selected')) {
+                                            this.classList.remove('selected');
+                                        } else if (this.classList.contains('kill-selected')) {
+                                            this.classList.remove('kill-selected');
+                                        } else {
+                                            this.classList.add('kill-selected');
+                                        }
+                                    }, 500);
+                                }.bind(btn);
+                                btn.addEventListener('touchstart', startLongPress);
+                                btn.addEventListener('touchend', () => clearTimeout(timer));
+                                btn.addEventListener('touchmove', () => clearTimeout(timer));
+                                btn.addEventListener('mousedown', startLongPress);
+                                btn.addEventListener('mouseup', () => clearTimeout(timer));
+                                btn.addEventListener('mouseleave', () => clearTimeout(timer));
+                                container.appendChild(btn);
+                            }
+                        });
+                        document.querySelectorAll('.clear-position').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const pos = this.dataset.position;
+                                document.querySelectorAll(`#${pos} .number-btn-small`).forEach(b => {
+                                    b.classList.remove('selected', 'kill-selected');
+                                });
+                            });
+                        });
+                        document.getElementById('clear-all-conditions')?.addEventListener('change', function() {
+                            if (this.checked) {
+                                document.querySelectorAll('.single-line-numbers .number-btn-small').forEach(b => {
+                                    b.classList.remove('selected', 'kill-selected');
+                                });
+                                this.checked = false;
+                            }
+                        });
+                    }
+                    function initInputCounters() {
+                        ['input1', 'input2'].forEach(id => {
+                            const input = document.getElementById(id);
+                            const span = document.getElementById(`count${id.slice(-1)}`);
+                            if (!input || !span) return;
+                            const update = () => {
+                                const nums = input.value.trim() ? input.value.trim().split(/\s+/).filter(n => n.length===3) : [];
+                                span.textContent = nums.length;
+                            };
+                            input.addEventListener('input', update);
+                            update();
+                        });
+                    }
+                    document.getElementById('add-input').addEventListener('click', function() {
+                        const container = document.getElementById('intersection-inputs');
+                        const idx = document.querySelectorAll('.textarea-container').length + 1;
+                        const div = document.createElement('div');
+                        div.className = 'textarea-container';
+                        div.innerHTML = `
+                            <label class="textarea-label">条件 ${idx} (3D号码，空格分隔):</label>
+                            <textarea id="input${idx}" placeholder="粘贴3D号码，用空格分隔..."></textarea>
+                            <div class="input-count">号码数: <span id="count${idx}">0</span></div>
+                            <button class="remove-input-btn" data-remove-input="${idx}"><i class="fas fa-times"></i> 删除</button>
+                        `;
+                        container.appendChild(div);
+                        const input = document.getElementById(`input${idx}`);
+                        const span = document.getElementById(`count${idx}`);
+                        input.addEventListener('input', function() {
+                            const nums = this.value.trim() ? this.value.trim().split(/\s+/).filter(n => n.length===3) : [];
+                            span.textContent = nums.length;
+                        });
+                        div.querySelector(`[data-remove-input="${idx}"]`).addEventListener('click', function() {
+                            if (document.querySelectorAll('.textarea-container').length > 2) {
+                                div.remove();
+                                document.querySelectorAll('.textarea-container').forEach((c, i) => {
+                                    const inp = c.querySelector('textarea');
+                                    const lbl = c.querySelector('.textarea-label');
+                                    const cnt = c.querySelector('.input-count span');
+                                    const del = c.querySelector('[data-remove-input]');
+                                    const newId = i + 1;
+                                    inp.id = `input${newId}`;
+                                    lbl.textContent = `条件 ${newId} (3D号码，空格分隔):`;
+                                    cnt.id = `count${newId}`;
+                                    if (del) del.dataset.removeInput = newId;
+                                });
+                            } else alert('至少保留两个条件框');
+                        });
+                    });
+                    document.getElementById('clear-inputs').addEventListener('click', function() {
+                        if (confirm('确定清空所有条件框？')) {
+                            document.querySelectorAll('textarea[id^="input"]').forEach(inp => {
+                                inp.value = '';
+                                const id = inp.id.slice(-1);
+                                const span = document.getElementById(`count${id}`);
+                                if (span) span.textContent = '0';
+                            });
+                        }
+                    });
+                    function generateConditionPool() {
+                        const isDirect = document.querySelector('input[name="generateType"]:checked').value === 'direct';
+                        const includeG3 = document.getElementById('includeG3').checked;
+                        const includeG6 = document.getElementById('includeG6').checked;
+                        const includeBZ = document.getElementById('includeBZ').checked;
+                        if (!includeG3 && !includeG6 && !includeBZ) return [];
+                        const pool = new Set();
+                        if (isDirect) {
+                            for (let i = 0; i <= 999; i++) {
+                                const num = i.toString().padStart(3, '0');
+                                const d1=num[0], d2=num[1], d3=num[2];
+                                if (d1===d2 && d2===d3) { if (includeBZ) pool.add(num); }
+                                else if (d1===d2 || d2===d3 || d1===d3) { if (includeG3) pool.add(num); }
+                                else { if (includeG6) pool.add(num); }
+                            }
+                        } else {
+                            if (includeBZ) for (let i=0;i<=9;i++) pool.add(i.toString().repeat(3));
+                            if (includeG3) {
+                                for (let a=0;a<=9;a++) for (let b=0;b<=9;b++) {
+                                    if (a===b) continue;
+                                    pool.add(`${a}${a}${b}`); pool.add(`${a}${b}${a}`); pool.add(`${b}${a}${a}`);
+                                }
+                            }
+                            if (includeG6) {
+                                for (let a=0;a<=9;a++) for (let b=a+1;b<=9;b++) for (let c=b+1;c<=9;c++) {
+                                    const arr=[a,b,c]; const perms=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+                                    perms.forEach(p => pool.add(`${arr[p[0]]}${arr[p[1]]}${arr[p[2]]}`));
+                                }
+                            }
+                        }
+                        return Array.from(pool);
+                    }
+                    function getPositionConditions() {
+                        const cond = { hundredSelect:[], tenSelect:[], unitSelect:[], hundredKill:[], tenKill:[], unitKill:[] };
+                        ['hundred','ten','unit'].forEach(pos => {
+                            document.querySelectorAll(`#${pos} .number-btn-small`).forEach(btn => {
+                                if (btn.classList.contains('selected')) cond[`${pos}Select`].push(btn.dataset.number);
+                                else if (btn.classList.contains('kill-selected')) cond[`${pos}Kill`].push(btn.dataset.number);
+                            });
+                        });
+                        return cond;
+                    }
+                    function applyPositionFilter(numbers, cond) {
+                        return numbers.filter(num => {
+                            const h=num[0], t=num[1], u=num[2];
+                            if (cond.hundredSelect.length && !cond.hundredSelect.includes(h)) return false;
+                            if (cond.tenSelect.length && !cond.tenSelect.includes(t)) return false;
+                            if (cond.unitSelect.length && !cond.unitSelect.includes(u)) return false;
+                            if (cond.hundredKill.length && cond.hundredKill.includes(h)) return false;
+                            if (cond.tenKill.length && cond.tenKill.includes(t)) return false;
+                            if (cond.unitKill.length && cond.unitKill.includes(u)) return false;
+                            return true;
+                        });
+                    }
+                    function renderResults(nums) {
+                        const container = document.getElementById('intersection-results');
+                        container.innerHTML = '';
+                        if (nums.length === 0) {
+                            container.innerHTML = '<div class="results-placeholder">没有找到符合条件的号码</div>';
+                            return;
+                        }
+                        const sorted = nums.sort((a,b) => a[0].localeCompare(b[0]));
+                        sorted.forEach((num, idx) => {
+                            const span = document.createElement('span');
+                            span.className = 'number-item';
+                            span.textContent = num;
+                            span.dataset.number = num;
+                            const del = document.createElement('span');
+                            del.className = 'delete-btn';
+                            del.innerHTML = '×';
+                            span.appendChild(del);
+                            span.addEventListener('click', function(e) {
+                                if (e.target !== del) this.classList.toggle('selected');
+                            });
+                            del.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                if (confirm(`删除号码 ${span.dataset.number} ？`)) {
+                                    const idx = currentResults.indexOf(span.dataset.number);
+                                    if (idx > -1) currentResults.splice(idx,1);
+                                    renderResults(currentResults);
+                                    updateStats();
+                                }
+                            });
+                            container.appendChild(span);
+                            if ((idx+1) % 7 === 0) container.appendChild(document.createElement('br'));
+                        });
+                    }
+                    function updateStats() {
+                        document.getElementById('result-count').textContent = currentResults.length;
+                        document.getElementById('result-price').textContent = currentResults.length * 2;
+                    }
+                    document.getElementById('calculate-intersection').addEventListener('click', function() {
+                        const sets = [];
+                        document.querySelectorAll('textarea[id^="input"]').forEach(input => {
+                            const text = input.value.trim();
+                            if (text) {
+                                const nums = text.split(/\s+/).filter(n => n.length===3);
+                                if (nums.length) sets.push(new Set(nums));
+                            }
+                        });
+                        if (sets.length < 2) { alert('请至少填写两个条件框的号码'); return; }
+                        const pool = generateConditionPool();
+                        if (pool.length === 0) { alert('当前形态设置下没有生成任何号码，请至少勾选一种包含类型'); return; }
+                        sets.unshift(new Set(pool));
+                        let intersection = [...sets[0]];
+                        for (let i = 1; i < sets.length; i++) intersection = intersection.filter(n => sets[i].has(n));
+                        const posCond = getPositionConditions();
+                        if (Object.values(posCond).some(arr => arr.length)) intersection = applyPositionFilter(intersection, posCond);
+                        currentResults = intersection;
+                        renderResults(currentResults);
+                        updateStats();
+                    });
+                    document.getElementById('copy-results').addEventListener('click', function() {
+                        if (!currentResults.length) return alert('没有可复制的结果');
+                        let text = '';
+                        currentResults.forEach((n,i) => { text += n + ' '; if ((i+1)%7===0) text += '\n'; });
+                        navigator.clipboard.writeText(text.trim()).then(() => alert('已复制到剪贴板')).catch(() => { alert('复制失败，请手动复制'); });
+                    });
+                    document.getElementById('export-results').addEventListener('click', function() {
+                        if (!currentResults.length) return alert('没有可导出的结果');
+                        let resultText = '';
+                        currentResults.forEach((n,i) => { resultText += n + ' '; if ((i+1)%7===0) resultText += '\n'; });
+                        const cond = getPositionConditions();
+                        let condStr = '';
+                        ['hundred','ten','unit'].forEach(p => { if(cond[`${p}Select`].length) condStr += `${p==='hundred'?'百位':p==='ten'?'十位':'个位'}选号: ${cond[`${p}Select`].join(' ')}\n`; if(cond[`${p}Kill`].length) condStr += `${p==='hundred'?'百位':p==='ten'?'十位':'个位'}杀号: ${cond[`${p}Kill`].join(' ')}\n`; });
+                        const content = `福彩3D交集计算结果\n生成时间: ${new Date().toLocaleString()}\n\n筛选条件:\n${condStr || '无'}\n交集结果 (${currentResults.length}注，总价${currentResults.length*2}元):\n${resultText.trim()}`;
+                        const blob = new Blob([content], {type:'text/plain'});
+                        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `3D交集结果_${Date.now()}.txt`; a.click(); URL.revokeObjectURL(a.href);
+                    });
+                    document.getElementById('delete-selected').addEventListener('click', function() {
+                        const selected = document.querySelectorAll('.number-item.selected');
+                        if (!selected.length) return alert('请先选中要删除的号码');
+                        if (confirm(`确定删除选中的 ${selected.length} 个号码？`)) {
+                            const toDel = new Set(Array.from(selected).map(el => el.dataset.number));
+                            currentResults = currentResults.filter(n => !toDel.has(n));
+                            renderResults(currentResults);
+                            updateStats();
+                        }
+                    });
+                    initNumberSelectors();
+                    initInputCounters();
+                    document.getElementById('intersection-results').innerHTML = '<div class="results-placeholder">等待计算结果...</div>';
+                })();
+            </script>
+        </div>
+    </div>
+
+    <!-- 工具2：直选过滤（去掉复选框，每行7个，按钮文字小且一行，移除提示文字） -->
+    <div id="tool2-wrapper" class="tool-wrapper">
+        <div class="tool2-container">
+            <style>
+                .tool2-container {
+                    all: initial;
+                    display: block;
+                    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                    background-color: #f8f9fa;
+                    color: #333;
+                    padding: 12px;
+                    font-size: 14px;
+                }
+                .tool2-container * {
+                    box-sizing: border-box;
+                }
+                .tool2-container .section {
+                    background-color: white;
+                    padding: 12px;
+                    margin-bottom: 10px;
+                    border-radius: 5px;
+                    border: 1px solid #ddd;
+                }
+                .tool2-container .input-area {
+                    width: 100%;
+                    min-height: 100px;
+                    padding: 8px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    font-size: 0.85rem;
+                    resize: vertical;
+                    margin-bottom: 10px;
+                    font-family: monospace;
+                }
+                .tool2-container .period-selector {
+                    display: flex;
+                    gap: 6px;
+                    margin-bottom: 10px;
+                }
+                .tool2-container .period-option {
+                    flex: 1;
+                }
+                .tool2-container .period-option input {
+                    display: none;
+                }
+                .tool2-container .period-label {
+                    display: block;
+                    padding: 8px 2px;
+                    background-color: #f0f0f0;
+                    border-radius: 4px;
+                    text-align: center;
+                    cursor: pointer;
+                    font-size: 0.8rem;
+                    border: 1px solid #ccc;
+                }
+                .tool2-container .period-option input:checked + .period-label {
+                    background-color: #7f8fa6;
+                    color: white;
+                    border-color: #7f8fa6;
+                }
+                .tool2-container .btn-row {
+                    display: flex;
+                    gap: 6px;
+                    margin-bottom: 10px;
+                }
+                .tool2-container .btn {
+                    flex: 1;
+                    padding: 10px 6px;
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 0.8rem;      /* 稍微减小字号 */
+                    font-weight: 500;
+                    cursor: pointer;
+                    text-align: center;
+                    white-space: nowrap;     /* 强制一行 */
+                }
+                .tool2-container .btn-primary {
+                    background-color: #7f8fa6;
+                    color: white;
+                }
+                .tool2-container .btn-secondary {
+                    background-color: #f0f0f0;
+                    color: #333;
+                    border: 1px solid #ccc;
+                }
+                .tool2-container .btn-info {
+                    background-color: #95a5a6;
+                    color: white;
+                }
+                .tool2-container .stats {
+                    display: flex;
+                    justify-content: space-between;
+                    background-color: #f8f9ff;
+                    border-radius: 4px;
+                    padding: 10px;
+                    margin-bottom: 10px;
+                    border: 1px solid #e0e0e0;
+                }
+                .tool2-container .stat-item {
+                    text-align: center;
+                }
+                .tool2-container .stat-value {
+                    font-size: 1.2rem;
+                    font-weight: bold;
+                    color: #7f8fa6;
+                }
+                .tool2-container .stat-label {
+                    font-size: 0.75rem;
+                    color: #666;
+                }
+                .tool2-container .action-buttons {
+                    display: flex;
+                    gap: 6px;
+                    margin-bottom: 10px;
+                }
+                .tool2-container .action-buttons .btn {
+                    font-size: 0.7rem;      /* 更小的字号 */
+                    padding: 6px 2px;
+                }
+                .tool2-container .numbers-container {
+                    max-height: 250px;
+                    overflow-y: auto;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 4px;
+                    padding: 8px;
+                    margin-bottom: 10px;
+                }
+                .tool2-container .numbers-grid {
+                    display: grid;
+                    grid-template-columns: repeat(7, 1fr);  /* 改为7列 */
+                    gap: 4px;
+                }
+                .tool2-container .number-item {
+                    text-align: center;
+                    padding: 6px 0;
+                    background-color: white;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 4px;
+                    font-weight: 500;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    transition: background-color 0.1s;
+                    user-select: none;
+                }
+                .tool2-container .number-item.selected {
+                    background-color: #7f8fa6;
+                    color: white;
+                    border-color: #6b7b93;
+                }
+                /* 移除所有复选框相关样式 */
+                .tool2-container .message-box {
+                    position: fixed;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background-color: #7f8fa6;
+                    color: white;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    z-index: 1000;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                }
+                .tool2-container .message-box.show {
+                    opacity: 1;
+                }
+            </style>
+            <!-- 工具2核心内容 - 无提示文字 -->
+            <div class="tool2-container">
+                <!-- 数据输入区域 -->
+                <div class="section">
+                    <textarea class="input-area" id="filter_historyData" placeholder="粘贴历史开奖号码，格式：2024009 265（每行一个）"></textarea>
+                    <!-- 已移除hint提示块 -->
+                </div>
+                
+                <!-- 过滤设置区域 -->
+                <div class="section">
+                    <div class="period-selector">
+                        <div class="period-option">
+                            <input type="radio" id="filter_period50" name="filter_period" value="50" checked>
+                            <label class="period-label" for="filter_period50">50期</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="filter_period150" name="filter_period" value="150">
+                            <label class="period-label" for="filter_period150">150期</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="filter_period300" name="filter_period" value="300">
+                            <label class="period-label" for="filter_period300">300期</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="filter_period500" name="filter_period" value="500">
+                            <label class="period-label" for="filter_period500">500期</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="filter_period1000" name="filter_period" value="1000">
+                            <label class="period-label" for="filter_period1000">1000期</label>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-row">
+                        <button class="btn btn-primary" id="filter_calculateBtn">开始计算</button>
+                        <button class="btn btn-secondary" id="filter_clearBtn">清空</button>
+                    </div>
+                </div>
+                
+                <!-- 结果显示区域 -->
+                <div class="section">
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="filter_remainingCount">1000</div>
+                            <div class="stat-label">剩余注数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="filter_selectedCount">0</div>
+                            <div class="stat-label">已选择</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="filter_totalPrice">0</div>
+                            <div class="stat-label">金额(元)</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 四个按钮文字改小且一行 -->
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" id="filter_selectAllBtn">全选</button>
+                        <button class="btn btn-secondary" id="filter_deselectAllBtn">取消全选</button>
+                        <button class="btn btn-secondary" id="filter_deleteSelectedBtn">删除所选</button>
+                        <button class="btn btn-secondary" id="filter_keepSelectedBtn">保留所选</button>
+                    </div>
+                    
+                    <div class="numbers-container">
+                        <div class="numbers-grid" id="filter_numbersGrid"></div>
+                    </div>
+                    
+                    <div class="btn-row">
+                        <button class="btn btn-info" id="filter_copyAllBtn">复制全部</button>
+                        <button class="btn btn-info" id="filter_copySelectedBtn">复制所选</button>
+                    </div>
+                </div>
+                <div style="text-align:center; padding:10px; color:#666; font-size:0.7rem;">理性参考</div>
+            </div>
+
+            <!-- 工具2脚本（修改为点击切换选中，去掉复选框） -->
+            <script>
+                (function() {
+                    let allNumbers = Array.from({length: 1000}, (_, i) => i.toString().padStart(3, '0'));
+                    let currentNumbers = [...allNumbers];
+                    let selectedNumbers = new Set();
+                    
+                    const historyDataEl = document.getElementById('filter_historyData');
+                    const numbersGridEl = document.getElementById('filter_numbersGrid');
+                    const remainingCountEl = document.getElementById('filter_remainingCount');
+                    const selectedCountEl = document.getElementById('filter_selectedCount');
+                    const totalPriceEl = document.getElementById('filter_totalPrice');
+                    const messageBox = document.getElementById('filter_messageBox') || (() => {
+                        const mb = document.createElement('div');
+                        mb.className = 'message-box';
+                        mb.id = 'filter_messageBox';
+                        document.body.appendChild(mb);
+                        return mb;
+                    })();
+                    
+                    const sampleData = `2024009\t265
+2024010\t437
+2024011\t927
+2024012\t590
+2024013\t468
+2024014\t251
+2024015\t438
+2024016\t920
+2024017\t659
+2024018\t347`;
+                    
+                    function showMessage(text) {
+                        messageBox.textContent = text;
+                        messageBox.classList.add('show');
+                        setTimeout(() => messageBox.classList.remove('show'), 2000);
+                    }
+                    
+                    function renderNumbers() {
+                        numbersGridEl.innerHTML = '';
+                        if (currentNumbers.length === 0) {
+                            numbersGridEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:#666;">没有符合条件的号码</div>';
+                        } else {
+                            currentNumbers.forEach(number => {
+                                const isSelected = selectedNumbers.has(number);
+                                const item = document.createElement('div');
+                                item.className = 'number-item' + (isSelected ? ' selected' : '');
+                                item.textContent = number;
+                                item.dataset.number = number;
+                                item.addEventListener('click', function(e) {
+                                    const num = this.dataset.number;
+                                    if (selectedNumbers.has(num)) {
+                                        selectedNumbers.delete(num);
+                                        this.classList.remove('selected');
+                                    } else {
+                                        selectedNumbers.add(num);
+                                        this.classList.add('selected');
+                                    }
+                                    updateStats();
+                                });
+                                numbersGridEl.appendChild(item);
+                            });
+                        }
+                        updateStats();
+                    }
+                    
+                    function updateStats() {
+                        remainingCountEl.textContent = currentNumbers.length;
+                        selectedCountEl.textContent = selectedNumbers.size;
+                        totalPriceEl.textContent = (selectedNumbers.size * 2).toFixed(0);
+                    }
+                    
+                    function parseHistoryData() {
+                        let data = historyDataEl.value.trim();
+                        if (!data) return [];
+                        const lines = data.split('\n');
+                        const nums = [];
+                        lines.forEach(line => {
+                            const trimmed = line.trim();
+                            if (!trimmed) return;
+                            const parts = trimmed.split(/\s+/);
+                            if (parts.length >= 2 && /^\d{3}$/.test(parts[1])) nums.push(parts[1]);
+                            else {
+                                const match = trimmed.match(/\d{3}/);
+                                if (match) nums.push(match[0]);
+                            }
+                        });
+                        return nums;
+                    }
+                    
+                    function filterNumbers() {
+                        const selectedPeriod = document.querySelector('input[name="filter_period"]:checked').value;
+                        const period = parseInt(selectedPeriod);
+                        let history = parseHistoryData();
+                        let recent = [];
+                        if (history.length === 0) {
+                            const sampleLines = sampleData.split('\n');
+                            sampleLines.forEach(l => { let p = l.split(/\s+/); if(p[1]) recent.push(p[1]); });
+                            recent = recent.slice(-period);
+                            showMessage(`使用示例数据 (${recent.length}期)`);
+                        } else {
+                            recent = history.slice(-period);
+                        }
+                        currentNumbers = allNumbers.filter(n => !recent.includes(n));
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage(`过滤完成，剩余${currentNumbers.length}注`);
+                    }
+                    
+                    document.getElementById('filter_calculateBtn').addEventListener('click', filterNumbers);
+                    document.getElementById('filter_clearBtn').addEventListener('click', function() {
+                        historyDataEl.value = '';
+                        currentNumbers = [...allNumbers];
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage('已重置为全部1000注');
+                    });
+                    document.getElementById('filter_selectAllBtn').addEventListener('click', function() {
+                        currentNumbers.forEach(n => selectedNumbers.add(n));
+                        renderNumbers();
+                        showMessage(`已全选 ${selectedNumbers.size} 注`);
+                    });
+                    document.getElementById('filter_deselectAllBtn').addEventListener('click', function() {
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage('已取消全选');
+                    });
+                    document.getElementById('filter_deleteSelectedBtn').addEventListener('click', function() {
+                        if (selectedNumbers.size === 0) return showMessage('请先选择号码');
+                        currentNumbers = currentNumbers.filter(n => !selectedNumbers.has(n));
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage('已删除所选号码');
+                    });
+                    document.getElementById('filter_keepSelectedBtn').addEventListener('click', function() {
+                        if (selectedNumbers.size === 0) return showMessage('请先选择要保留的号码');
+                        currentNumbers = currentNumbers.filter(n => selectedNumbers.has(n));
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage('已保留所选号码');
+                    });
+                    
+                    function generateCopyText(arr) {
+                        if (!arr.length) return '';
+                        let text = '';
+                        arr.forEach((n,i) => { text += n; if ((i+1)%7===0) text += '\n'; else if (i<arr.length-1) text += ' '; });
+                        return text;
+                    }
+                    
+                    document.getElementById('filter_copyAllBtn').addEventListener('click', function() {
+                        if (!currentNumbers.length) return showMessage('没有号码可复制');
+                        const text = generateCopyText(currentNumbers);
+                        navigator.clipboard?.writeText(text).then(() => showMessage('复制成功')).catch(() => alert('手动复制'));
+                    });
+                    document.getElementById('filter_copySelectedBtn').addEventListener('click', function() {
+                        if (selectedNumbers.size === 0) return showMessage('没有选中号码');
+                        const text = generateCopyText(Array.from(selectedNumbers));
+                        navigator.clipboard?.writeText(text).then(() => showMessage('复制成功')).catch(() => alert('手动复制'));
+                    });
+                    
+                    renderNumbers();
+                })();
+            </script>
+        </div>
+    </div>
+
+    <!-- 导航切换脚本 -->
+    <script>
+        const btn1 = document.getElementById('btnTool1');
+        const btn2 = document.getElementById('btnTool2');
+        const wrapper1 = document.getElementById('tool1-wrapper');
+        const wrapper2 = document.getElementById('tool2-wrapper');
+
+        function switchTool(active) {
+            btn1.classList.toggle('active', active === 1);
+            btn2.classList.toggle('active', active === 2);
+            wrapper1.classList.toggle('active', active === 1);
+            wrapper2.classList.toggle('active', active === 2);
+        }
+
+        btn1.addEventListener('click', () => switchTool(1));
+        btn2.addEventListener('click', () => switchTool(2));
+    </script>
+
+    <!-- Font Awesome 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</body>
+</html>
