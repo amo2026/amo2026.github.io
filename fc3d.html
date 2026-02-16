@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>福彩3D三工具 · 交集/历史过滤/分解</title>
+    <title>福彩3D三工具 · 完整版</title>
     <style>
         /* 全局导航样式 */
         * {
@@ -74,7 +74,7 @@
         <button class="nav-btn" id="btnTool3">🔢 分解</button>
     </div>
 
-    <!-- ========= 工具1：交集计算 (完整代码) ========= -->
+    <!-- ========= 工具1：交集计算 (完整) ========= -->
     <div id="tool1-wrapper" class="tool-wrapper active">
         <div class="tool1-container">
             <style>
@@ -636,4 +636,1220 @@
                                 const d1=num[0], d2=num[1], d3=num[2];
                                 if (d1===d2 && d2===d3) { if (includeBZ) pool.add(num); }
                                 else if (d1===d2 || d2===d3 || d1===d3) { if (includeG3) pool.add(num); }
-                                else { if (includeG6) pool.add(n
+                                else { if (includeG6) pool.add(num); }
+                            }
+                        } else {
+                            if (includeBZ) for (let i=0;i<=9;i++) pool.add(i.toString().repeat(3));
+                            if (includeG3) {
+                                for (let a=0;a<=9;a++) for (let b=0;b<=9;b++) {
+                                    if (a===b) continue;
+                                    pool.add(`${a}${a}${b}`); pool.add(`${a}${b}${a}`); pool.add(`${b}${a}${a}`);
+                                }
+                            }
+                            if (includeG6) {
+                                for (let a=0;a<=9;a++) for (let b=a+1;b<=9;b++) for (let c=b+1;c<=9;c++) {
+                                    const arr=[a,b,c]; const perms=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+                                    perms.forEach(p => pool.add(`${arr[p[0]]}${arr[p[1]]}${arr[p[2]]}`));
+                                }
+                            }
+                        }
+                        return Array.from(pool);
+                    }
+                    function getPositionConditions() {
+                        const cond = { hundredSelect:[], tenSelect:[], unitSelect:[], hundredKill:[], tenKill:[], unitKill:[] };
+                        ['hundred','ten','unit'].forEach(pos => {
+                            document.querySelectorAll(`#${pos} .number-btn-small`).forEach(btn => {
+                                if (btn.classList.contains('selected')) cond[`${pos}Select`].push(btn.dataset.number);
+                                else if (btn.classList.contains('kill-selected')) cond[`${pos}Kill`].push(btn.dataset.number);
+                            });
+                        });
+                        return cond;
+                    }
+                    function applyPositionFilter(numbers, cond) {
+                        return numbers.filter(num => {
+                            const h=num[0], t=num[1], u=num[2];
+                            if (cond.hundredSelect.length && !cond.hundredSelect.includes(h)) return false;
+                            if (cond.tenSelect.length && !cond.tenSelect.includes(t)) return false;
+                            if (cond.unitSelect.length && !cond.unitSelect.includes(u)) return false;
+                            if (cond.hundredKill.length && cond.hundredKill.includes(h)) return false;
+                            if (cond.tenKill.length && cond.tenKill.includes(t)) return false;
+                            if (cond.unitKill.length && cond.unitKill.includes(u)) return false;
+                            return true;
+                        });
+                    }
+                    function renderResults(nums) {
+                        const container = document.getElementById('intersection-results');
+                        container.innerHTML = '';
+                        if (nums.length === 0) {
+                            container.innerHTML = '<div class="results-placeholder">没有找到符合条件的号码</div>';
+                            return;
+                        }
+                        const sorted = nums.sort((a,b) => a[0].localeCompare(b[0]));
+                        sorted.forEach((num, idx) => {
+                            const span = document.createElement('span');
+                            span.className = 'number-item';
+                            span.textContent = num;
+                            span.dataset.number = num;
+                            const del = document.createElement('span');
+                            del.className = 'delete-btn';
+                            del.innerHTML = '×';
+                            span.appendChild(del);
+                            span.addEventListener('click', function(e) {
+                                if (e.target !== del) this.classList.toggle('selected');
+                            });
+                            del.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                if (confirm(`删除号码 ${span.dataset.number} ？`)) {
+                                    const idx = currentResults.indexOf(span.dataset.number);
+                                    if (idx > -1) currentResults.splice(idx,1);
+                                    renderResults(currentResults);
+                                    updateStats();
+                                }
+                            });
+                            container.appendChild(span);
+                            if ((idx+1) % 7 === 0) container.appendChild(document.createElement('br'));
+                        });
+                    }
+                    function updateStats() {
+                        document.getElementById('result-count').textContent = currentResults.length;
+                        document.getElementById('result-price').textContent = currentResults.length * 2;
+                    }
+                    document.getElementById('calculate-intersection').addEventListener('click', function() {
+                        const sets = [];
+                        document.querySelectorAll('textarea[id^="input"]').forEach(input => {
+                            const text = input.value.trim();
+                            if (text) {
+                                const nums = text.split(/\s+/).filter(n => n.length===3);
+                                if (nums.length) sets.push(new Set(nums));
+                            }
+                        });
+                        if (sets.length < 2) { alert('请至少填写两个条件框的号码'); return; }
+                        const pool = generateConditionPool();
+                        if (pool.length === 0) { alert('当前形态设置下没有生成任何号码，请至少勾选一种包含类型'); return; }
+                        sets.unshift(new Set(pool));
+                        let intersection = [...sets[0]];
+                        for (let i = 1; i < sets.length; i++) intersection = intersection.filter(n => sets[i].has(n));
+                        const posCond = getPositionConditions();
+                        if (Object.values(posCond).some(arr => arr.length)) intersection = applyPositionFilter(intersection, posCond);
+                        currentResults = intersection;
+                        renderResults(currentResults);
+                        updateStats();
+                    });
+                    document.getElementById('copy-results').addEventListener('click', function() {
+                        if (!currentResults.length) return alert('没有可复制的结果');
+                        let text = '';
+                        currentResults.forEach((n,i) => { text += n + ' '; if ((i+1)%7===0) text += '\n'; });
+                        navigator.clipboard.writeText(text.trim()).then(() => alert('已复制到剪贴板')).catch(() => { alert('复制失败，请手动复制'); });
+                    });
+                    document.getElementById('export-results').addEventListener('click', function() {
+                        if (!currentResults.length) return alert('没有可导出的结果');
+                        let resultText = '';
+                        currentResults.forEach((n,i) => { resultText += n + ' '; if ((i+1)%7===0) resultText += '\n'; });
+                        const cond = getPositionConditions();
+                        let condStr = '';
+                        ['hundred','ten','unit'].forEach(p => { if(cond[`${p}Select`].length) condStr += `${p==='hundred'?'百位':p==='ten'?'十位':'个位'}选号: ${cond[`${p}Select`].join(' ')}\n`; if(cond[`${p}Kill`].length) condStr += `${p==='hundred'?'百位':p==='ten'?'十位':'个位'}杀号: ${cond[`${p}Kill`].join(' ')}\n`; });
+                        const content = `福彩3D交集计算结果\n生成时间: ${new Date().toLocaleString()}\n\n筛选条件:\n${condStr || '无'}\n交集结果 (${currentResults.length}注，总价${currentResults.length*2}元):\n${resultText.trim()}`;
+                        const blob = new Blob([content], {type:'text/plain'});
+                        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `3D交集结果_${Date.now()}.txt`; a.click(); URL.revokeObjectURL(a.href);
+                    });
+                    document.getElementById('delete-selected').addEventListener('click', function() {
+                        const selected = document.querySelectorAll('.number-item.selected');
+                        if (!selected.length) return alert('请先选中要删除的号码');
+                        if (confirm(`确定删除选中的 ${selected.length} 个号码？`)) {
+                            const toDel = new Set(Array.from(selected).map(el => el.dataset.number));
+                            currentResults = currentResults.filter(n => !toDel.has(n));
+                            renderResults(currentResults);
+                            updateStats();
+                        }
+                    });
+                    initNumberSelectors();
+                    initInputCounters();
+                    document.getElementById('intersection-results').innerHTML = '<div class="results-placeholder">等待计算结果...</div>';
+                })();
+            </script>
+        </div>
+    </div>
+
+    <!-- ========= 工具2：历史过滤 (完整) ========= -->
+    <div id="tool2-wrapper" class="tool-wrapper">
+        <div class="tool2-container">
+            <style>
+                .tool2-container {
+                    all: initial;
+                    display: block;
+                    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                    background-color: #f8f9fa;
+                    color: #333;
+                    padding: 12px;
+                    font-size: 14px;
+                }
+                .tool2-container * {
+                    box-sizing: border-box;
+                }
+                .tool2-container .section {
+                    background-color: white;
+                    padding: 12px;
+                    margin-bottom: 10px;
+                    border-radius: 5px;
+                    border: 1px solid #ddd;
+                }
+                .tool2-container .input-area {
+                    width: 100%;
+                    min-height: 100px;
+                    padding: 8px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    font-size: 0.85rem;
+                    resize: vertical;
+                    margin-bottom: 10px;
+                    font-family: monospace;
+                }
+                .tool2-container .period-selector {
+                    display: flex;
+                    gap: 6px;
+                    margin-bottom: 10px;
+                }
+                .tool2-container .period-option {
+                    flex: 1;
+                }
+                .tool2-container .period-option input {
+                    display: none;
+                }
+                .tool2-container .period-label {
+                    display: block;
+                    padding: 8px 2px;
+                    background-color: #f0f0f0;
+                    border-radius: 4px;
+                    text-align: center;
+                    cursor: pointer;
+                    font-size: 0.8rem;
+                    border: 1px solid #ccc;
+                }
+                .tool2-container .period-option input:checked + .period-label {
+                    background-color: #7f8fa6;
+                    color: white;
+                    border-color: #7f8fa6;
+                }
+                .tool2-container .btn-row {
+                    display: flex;
+                    gap: 6px;
+                    margin-bottom: 10px;
+                }
+                .tool2-container .btn {
+                    flex: 1;
+                    padding: 10px 6px;
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 0.8rem;
+                    font-weight: 500;
+                    cursor: pointer;
+                    text-align: center;
+                    white-space: nowrap;
+                }
+                .tool2-container .btn-primary {
+                    background-color: #7f8fa6;
+                    color: white;
+                }
+                .tool2-container .btn-secondary {
+                    background-color: #f0f0f0;
+                    color: #333;
+                    border: 1px solid #ccc;
+                }
+                .tool2-container .btn-info {
+                    background-color: #95a5a6;
+                    color: white;
+                }
+                .tool2-container .stats {
+                    display: flex;
+                    justify-content: space-between;
+                    background-color: #f8f9ff;
+                    border-radius: 4px;
+                    padding: 10px;
+                    margin-bottom: 10px;
+                    border: 1px solid #e0e0e0;
+                }
+                .tool2-container .stat-item {
+                    text-align: center;
+                }
+                .tool2-container .stat-value {
+                    font-size: 1.2rem;
+                    font-weight: bold;
+                    color: #7f8fa6;
+                }
+                .tool2-container .stat-label {
+                    font-size: 0.75rem;
+                    color: #666;
+                }
+                .tool2-container .action-buttons {
+                    display: flex;
+                    gap: 6px;
+                    margin-bottom: 10px;
+                }
+                .tool2-container .action-buttons .btn {
+                    font-size: 0.7rem;
+                    padding: 6px 2px;
+                }
+                .tool2-container .numbers-container {
+                    max-height: 250px;
+                    overflow-y: auto;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 4px;
+                    padding: 8px;
+                    margin-bottom: 10px;
+                }
+                .tool2-container .numbers-grid {
+                    display: grid;
+                    grid-template-columns: repeat(7, 1fr);
+                    gap: 4px;
+                }
+                .tool2-container .number-item {
+                    text-align: center;
+                    padding: 6px 0;
+                    background-color: white;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 4px;
+                    font-weight: 500;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    transition: background-color 0.1s;
+                    user-select: none;
+                }
+                .tool2-container .number-item.selected {
+                    background-color: #7f8fa6;
+                    color: white;
+                    border-color: #6b7b93;
+                }
+                .tool2-container .message-box {
+                    position: fixed;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background-color: #7f8fa6;
+                    color: white;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    z-index: 1000;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                }
+                .tool2-container .message-box.show {
+                    opacity: 1;
+                }
+            </style>
+            <div class="tool2-container">
+                <div class="section">
+                    <textarea class="input-area" id="filter_historyData" placeholder="粘贴历史开奖号码，格式：2024009 265（每行一个）"></textarea>
+                </div>
+                <div class="section">
+                    <div class="period-selector">
+                        <div class="period-option">
+                            <input type="radio" id="filter_period50" name="filter_period" value="50" checked>
+                            <label class="period-label" for="filter_period50">50期</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="filter_period150" name="filter_period" value="150">
+                            <label class="period-label" for="filter_period150">150期</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="filter_period300" name="filter_period" value="300">
+                            <label class="period-label" for="filter_period300">300期</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="filter_period500" name="filter_period" value="500">
+                            <label class="period-label" for="filter_period500">500期</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="filter_period1000" name="filter_period" value="1000">
+                            <label class="period-label" for="filter_period1000">1000期</label>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-row">
+                        <button class="btn btn-primary" id="filter_calculateBtn">开始计算</button>
+                        <button class="btn btn-secondary" id="filter_clearBtn">清空</button>
+                    </div>
+                </div>
+                <div class="section">
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="filter_remainingCount">1000</div>
+                            <div class="stat-label">剩余注数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="filter_selectedCount">0</div>
+                            <div class="stat-label">已选择</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="filter_totalPrice">0</div>
+                            <div class="stat-label">金额(元)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" id="filter_selectAllBtn">全选</button>
+                        <button class="btn btn-secondary" id="filter_deselectAllBtn">取消全选</button>
+                        <button class="btn btn-secondary" id="filter_deleteSelectedBtn">删除所选</button>
+                        <button class="btn btn-secondary" id="filter_keepSelectedBtn">保留所选</button>
+                    </div>
+                    
+                    <div class="numbers-container">
+                        <div class="numbers-grid" id="filter_numbersGrid"></div>
+                    </div>
+                    
+                    <div class="btn-row">
+                        <button class="btn btn-info" id="filter_copyAllBtn">复制全部</button>
+                        <button class="btn btn-info" id="filter_copySelectedBtn">复制所选</button>
+                    </div>
+                </div>
+                <div style="text-align:center; padding:10px; color:#666; font-size:0.7rem;">理性参考</div>
+            </div>
+            <script>
+                (function() {
+                    let allNumbers = Array.from({length: 1000}, (_, i) => i.toString().padStart(3, '0'));
+                    let currentNumbers = [...allNumbers];
+                    let selectedNumbers = new Set();
+                    
+                    const historyDataEl = document.getElementById('filter_historyData');
+                    const numbersGridEl = document.getElementById('filter_numbersGrid');
+                    const remainingCountEl = document.getElementById('filter_remainingCount');
+                    const selectedCountEl = document.getElementById('filter_selectedCount');
+                    const totalPriceEl = document.getElementById('filter_totalPrice');
+                    const messageBox = document.getElementById('filter_messageBox') || (() => {
+                        const mb = document.createElement('div');
+                        mb.className = 'message-box';
+                        mb.id = 'filter_messageBox';
+                        document.body.appendChild(mb);
+                        return mb;
+                    })();
+                    
+                    const sampleData = `2024009\t265
+2024010\t437
+2024011\t927
+2024012\t590
+2024013\t468
+2024014\t251
+2024015\t438
+2024016\t920
+2024017\t659
+2024018\t347`;
+                    
+                    function showMessage(text) {
+                        messageBox.textContent = text;
+                        messageBox.classList.add('show');
+                        setTimeout(() => messageBox.classList.remove('show'), 2000);
+                    }
+                    
+                    function renderNumbers() {
+                        numbersGridEl.innerHTML = '';
+                        if (currentNumbers.length === 0) {
+                            numbersGridEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:#666;">没有符合条件的号码</div>';
+                        } else {
+                            currentNumbers.forEach(number => {
+                                const isSelected = selectedNumbers.has(number);
+                                const item = document.createElement('div');
+                                item.className = 'number-item' + (isSelected ? ' selected' : '');
+                                item.textContent = number;
+                                item.dataset.number = number;
+                                item.addEventListener('click', function(e) {
+                                    const num = this.dataset.number;
+                                    if (selectedNumbers.has(num)) {
+                                        selectedNumbers.delete(num);
+                                        this.classList.remove('selected');
+                                    } else {
+                                        selectedNumbers.add(num);
+                                        this.classList.add('selected');
+                                    }
+                                    updateStats();
+                                });
+                                numbersGridEl.appendChild(item);
+                            });
+                        }
+                        updateStats();
+                    }
+                    
+                    function updateStats() {
+                        remainingCountEl.textContent = currentNumbers.length;
+                        selectedCountEl.textContent = selectedNumbers.size;
+                        totalPriceEl.textContent = (selectedNumbers.size * 2).toFixed(0);
+                    }
+                    
+                    function parseHistoryData() {
+                        let data = historyDataEl.value.trim();
+                        if (!data) return [];
+                        const lines = data.split('\n');
+                        const nums = [];
+                        lines.forEach(line => {
+                            const trimmed = line.trim();
+                            if (!trimmed) return;
+                            const parts = trimmed.split(/\s+/);
+                            if (parts.length >= 2 && /^\d{3}$/.test(parts[1])) nums.push(parts[1]);
+                            else {
+                                const match = trimmed.match(/\d{3}/);
+                                if (match) nums.push(match[0]);
+                            }
+                        });
+                        return nums;
+                    }
+                    
+                    function filterNumbers() {
+                        const selectedPeriod = document.querySelector('input[name="filter_period"]:checked').value;
+                        const period = parseInt(selectedPeriod);
+                        let history = parseHistoryData();
+                        let recent = [];
+                        if (history.length === 0) {
+                            const sampleLines = sampleData.split('\n');
+                            sampleLines.forEach(l => { let p = l.split(/\s+/); if(p[1]) recent.push(p[1]); });
+                            recent = recent.slice(-period);
+                            showMessage(`使用示例数据 (${recent.length}期)`);
+                        } else {
+                            recent = history.slice(-period);
+                        }
+                        currentNumbers = allNumbers.filter(n => !recent.includes(n));
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage(`过滤完成，剩余${currentNumbers.length}注`);
+                    }
+                    
+                    document.getElementById('filter_calculateBtn').addEventListener('click', filterNumbers);
+                    document.getElementById('filter_clearBtn').addEventListener('click', function() {
+                        historyDataEl.value = '';
+                        currentNumbers = [...allNumbers];
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage('已重置为全部1000注');
+                    });
+                    document.getElementById('filter_selectAllBtn').addEventListener('click', function() {
+                        currentNumbers.forEach(n => selectedNumbers.add(n));
+                        renderNumbers();
+                        showMessage(`已全选 ${selectedNumbers.size} 注`);
+                    });
+                    document.getElementById('filter_deselectAllBtn').addEventListener('click', function() {
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage('已取消全选');
+                    });
+                    document.getElementById('filter_deleteSelectedBtn').addEventListener('click', function() {
+                        if (selectedNumbers.size === 0) return showMessage('请先选择号码');
+                        currentNumbers = currentNumbers.filter(n => !selectedNumbers.has(n));
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage('已删除所选号码');
+                    });
+                    document.getElementById('filter_keepSelectedBtn').addEventListener('click', function() {
+                        if (selectedNumbers.size === 0) return showMessage('请先选择要保留的号码');
+                        currentNumbers = currentNumbers.filter(n => selectedNumbers.has(n));
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage('已保留所选号码');
+                    });
+                    
+                    function generateCopyText(arr) {
+                        if (!arr.length) return '';
+                        let text = '';
+                        arr.forEach((n,i) => { text += n; if ((i+1)%7===0) text += '\n'; else if (i<arr.length-1) text += ' '; });
+                        return text;
+                    }
+                    
+                    document.getElementById('filter_copyAllBtn').addEventListener('click', function() {
+                        if (!currentNumbers.length) return showMessage('没有号码可复制');
+                        const text = generateCopyText(currentNumbers);
+                        navigator.clipboard?.writeText(text).then(() => showMessage('复制成功')).catch(() => alert('手动复制'));
+                    });
+                    document.getElementById('filter_copySelectedBtn').addEventListener('click', function() {
+                        if (selectedNumbers.size === 0) return showMessage('没有选中号码');
+                        const text = generateCopyText(Array.from(selectedNumbers));
+                        navigator.clipboard?.writeText(text).then(() => showMessage('复制成功')).catch(() => alert('手动复制'));
+                    });
+                    
+                    renderNumbers();
+                })();
+            </script>
+        </div>
+    </div>
+
+    <!-- ========= 工具3：分解 (完整) ========= -->
+    <div id="tool3-wrapper" class="tool-wrapper">
+        <div class="tool3-container">
+            <style>
+                .tool3-container {
+                    all: initial;
+                    display: block;
+                    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                    background-color: #ffffff;
+                    color: #333;
+                    padding: 16px 12px;
+                    font-size: 14px;
+                }
+                .tool3-container * {
+                    box-sizing: border-box;
+                }
+                .decompose-stack {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    margin-bottom: 12px;
+                }
+                .decomp-card {
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    padding: 12px 12px;
+                    border: 1px solid #e1e8ed;
+                }
+                .card-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 8px;
+                }
+                .card-header .label {
+                    font-weight: 600;
+                    font-size: 0.9rem;
+                    color: #2c3e50;
+                    background: transparent;
+                    padding: 2px 8px;
+                }
+                .header-buttons {
+                    display: flex;
+                    gap: 6px;
+                }
+                .clear-btn, .remove-btn {
+                    background: none;
+                    border: none;
+                    font-size: 1.1rem;
+                    color: #7f8fa6;
+                    cursor: pointer;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .clear-btn:active, .remove-btn:active {
+                    background: #e1e8ed;
+                }
+                .decomp-input {
+                    width: 100%;
+                    background: #ffffff;
+                    border: 1.5px solid #e1e8ed;
+                    border-radius: 30px;
+                    padding: 10px 14px;
+                    font-size: 1rem;
+                    font-family: inherit;
+                    text-align: center;
+                    color: #2c3e50;
+                    outline: none;
+                    margin-bottom: 10px;
+                }
+                .decomp-input:focus {
+                    border-color: #7f8fa6;
+                }
+                .mode-row {
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    gap: 6px 8px;
+                    background: transparent;
+                    border-radius: 24px;
+                    padding: 4px 4px;
+                    margin-bottom: 4px;
+                    border: none;
+                }
+                .mode-label {
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                    color: #5a6e85;
+                    min-width: 45px;
+                }
+                .mode-check-group {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px 12px;
+                    align-items: center;
+                }
+                .mode-check-group label {
+                    display: flex;
+                    align-items: center;
+                    gap: 3px;
+                    background: #ffffff;
+                    border: 1px solid #d9e2ef;
+                    border-radius: 30px;
+                    padding: 4px 12px;
+                    font-size: 0.75rem;
+                    color: #2c3e50;
+                    white-space: nowrap;
+                }
+                .mode-check-group input {
+                    accent-color: #7f8fa6;
+                    width: 14px;
+                    height: 14px;
+                }
+                .add-card-btn {
+                    background: #ffffff;
+                    border: 1px dashed #b8c9dd;
+                    border-radius: 30px;
+                    padding: 10px;
+                    font-size: 0.95rem;
+                    font-weight: 500;
+                    color: #5a6e85;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 4px;
+                    cursor: pointer;
+                    margin-bottom: 14px;
+                }
+                .add-card-btn:active {
+                    background: #f0f7fa;
+                }
+                .global-include {
+                    background: #f8fafc;
+                    border-radius: 30px;
+                    padding: 8px 8px;
+                    margin: 8px 0 12px;
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    justify-content: space-between;
+                    row-gap: 6px;
+                    border: 1px solid #e1e8ed;
+                }
+                .global-include .title {
+                    font-weight: 600;
+                    color: #2c3e50;
+                    font-size: 0.8rem;
+                }
+                .global-include .check-group {
+                    display: flex;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                }
+                .global-include label {
+                    display: flex;
+                    align-items: center;
+                    gap: 3px;
+                    background: #ffffff;
+                    padding: 4px 12px;
+                    border-radius: 30px;
+                    border: 1px solid #d9e2ef;
+                    color: #2c3e50;
+                    font-size: 0.75rem;
+                }
+                .global-include input {
+                    accent-color: #7f8fa6;
+                    width: 14px;
+                    height: 14px;
+                }
+                .generate-row {
+                    display: flex;
+                    gap: 6px;
+                    margin: 8px 0 12px;
+                }
+                .gen-btn {
+                    flex: 1;
+                    background: #7f8fa6;
+                    border: 1px solid #6b7b93;
+                    border-radius: 30px;
+                    padding: 10px 0;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    color: white;
+                    text-align: center;
+                    cursor: pointer;
+                    box-shadow: 0 2px 0 #5a6e85;
+                    transition: 0.05s linear;
+                }
+                .gen-btn:active {
+                    transform: translateY(2px);
+                    box-shadow: 0 1px 0 #5a6e85;
+                }
+                .result-header {
+                    background: #f0f7fa;
+                    border-radius: 28px;
+                    padding: 8px 14px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                    margin: 12px 0 8px;
+                }
+                .total-info {
+                    font-size: 0.95rem;
+                    color: #2c3e50;
+                }
+                .total-info strong {
+                    background: #d9e2ef;
+                    padding: 2px 8px;
+                    border-radius: 30px;
+                    margin: 0 3px;
+                }
+                .action-btns {
+                    display: flex;
+                    gap: 4px;
+                }
+                .action-btn {
+                    background: #ffffff;
+                    border: 1px solid #d9e2ef;
+                    border-radius: 30px;
+                    padding: 5px 14px;
+                    font-size: 0.75rem;
+                    font-weight: 520;
+                    color: #2c3e50;
+                    cursor: pointer;
+                    box-shadow: 0 1px 0 #b0c4de;
+                }
+                .action-btn:active {
+                    transform: translateY(1px);
+                    box-shadow: none;
+                }
+                .numbers-grid {
+                    background: #ffffff;
+                    border-radius: 20px;
+                    padding: 12px 6px;
+                    max-height: 350px;
+                    overflow-y: auto;
+                    border: 1px solid #e1e8ed;
+                }
+                .grid-row {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 2px 2px;
+                    margin-bottom: 4px;
+                    justify-content: flex-start;
+                }
+                .number-item {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 1px;
+                    font-size: 0.75rem;
+                    font-family: inherit;
+                    color: #2c3e50;
+                    padding: 2px 2px;
+                    background: transparent;
+                    border: none;
+                    width: auto;
+                    flex: 0 0 auto;
+                }
+                .number-item input {
+                    width: 14px;
+                    height: 14px;
+                    accent-color: #7f8fa6;
+                    margin: 0;
+                }
+                .placeholder {
+                    color: #a0b8cc;
+                    text-align: center;
+                    padding: 16px 0;
+                    font-style: italic;
+                    font-size: 0.85rem;
+                }
+                .footer-note {
+                    color: #7f8fa6;
+                    font-size: 0.65rem;
+                    text-align: center;
+                    margin-top: 12px;
+                    border-top: 1px dashed #d9e2ef;
+                    padding-top: 8px;
+                }
+            </style>
+            <div id="decomposeContainer" class="decompose-stack"></div>
+            <div class="add-card-btn" id="addDecomposeBtn">
+                <span style="font-size:1.3rem;">+</span> 添加分解
+            </div>
+            <div class="global-include">
+                <span class="title">包含类型</span>
+                <div class="check-group">
+                    <label><input type="checkbox" id="globalGroup3" checked> 组三</label>
+                    <label><input type="checkbox" id="globalGroup6" checked> 组六</label>
+                    <label><input type="checkbox" id="globalBaozi" checked> 豹子</label>
+                </div>
+            </div>
+            <div class="generate-row">
+                <div class="gen-btn" id="genDirectBtn">直选</div>
+                <div class="gen-btn" id="genGroupBtn">组选</div>
+            </div>
+            <div class="result-header">
+                <div class="total-info" id="totalInfo">总 <strong>0</strong> 注  <strong>0</strong>元</div>
+                <div class="action-btns">
+                    <button class="action-btn" id="selectAllBtn">全选</button>
+                    <button class="action-btn" id="copySelectedBtn">复制</button>
+                    <button class="action-btn" id="deleteSelectedBtn">删除</button>
+                </div>
+            </div>
+            <div class="numbers-grid" id="numbersGrid">
+                <div class="placeholder">点击直选或组选生成号码</div>
+            </div>
+            <div class="footer-note">点击号码可选中 · 全选/复制/删除</div>
+        </div>
+        <script>
+            (function() {
+                let decomps = [
+                    {
+                        full: '01234-56789',
+                        z6Left1Right2: true,
+                        z6Right2Left1: true,
+                        z3LeftSingleRightDup: true,
+                        z3RightSingleLeftDup: true
+                    }
+                ];
+
+                const globalGroup3 = document.getElementById('globalGroup3');
+                const globalGroup6 = document.getElementById('globalGroup6');
+                const globalBaozi = document.getElementById('globalBaozi');
+
+                let currentNumbers = [];
+                let currentMode = 'direct';
+
+                const container = document.getElementById('decomposeContainer');
+                const addBtn = document.getElementById('addDecomposeBtn');
+                const genDirect = document.getElementById('genDirectBtn');
+                const genGroup = document.getElementById('genGroupBtn');
+                const totalInfo = document.getElementById('totalInfo');
+                const numbersGrid = document.getElementById('numbersGrid');
+                const copyBtn = document.getElementById('copySelectedBtn');
+                const deleteBtn = document.getElementById('deleteSelectedBtn');
+                const selectAllBtn = document.getElementById('selectAllBtn');
+
+                function renderDecomposes() {
+                    container.innerHTML = '';
+                    decomps.forEach((decomp, index) => {
+                        const card = document.createElement('div');
+                        card.className = 'decomp-card';
+
+                        const header = document.createElement('div');
+                        header.className = 'card-header';
+                        const label = document.createElement('span');
+                        label.className = 'label';
+                        label.textContent = `分解${index+1}`;
+
+                        const btnGroup = document.createElement('div');
+                        btnGroup.className = 'header-buttons';
+
+                        const clearBtn = document.createElement('button');
+                        clearBtn.className = 'clear-btn';
+                        clearBtn.innerHTML = '🗑️';
+                        clearBtn.title = '清空分解式';
+                        clearBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            decomp.full = '';
+                            const input = card.querySelector('.decomp-input');
+                            if (input) input.value = '';
+                        });
+
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'remove-btn';
+                        removeBtn.innerHTML = '✕';
+                        removeBtn.title = '删除分解';
+                        removeBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (decomps.length > 1) {
+                                decomps.splice(index, 1);
+                                renderDecomposes();
+                            } else {
+                                alert('至少保留一个分解');
+                            }
+                        });
+
+                        btnGroup.appendChild(clearBtn);
+                        btnGroup.appendChild(removeBtn);
+                        header.appendChild(label);
+                        header.appendChild(btnGroup);
+                        card.appendChild(header);
+
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'decomp-input';
+                        input.value = decomp.full || '';
+                        input.placeholder = '01234-56789';
+                        input.addEventListener('input', (e) => {
+                            decomp.full = e.target.value;
+                        });
+                        card.appendChild(input);
+
+                        const z6Row = document.createElement('div');
+                        z6Row.className = 'mode-row';
+                        z6Row.innerHTML = `<span class="mode-label">组六</span>`;
+                        const z6Checks = document.createElement('div');
+                        z6Checks.className = 'mode-check-group';
+
+                        const cb1 = document.createElement('label');
+                        cb1.innerHTML = '<input type="checkbox"> 左1右2';
+                        const chk1 = cb1.querySelector('input');
+                        chk1.checked = decomp.z6Left1Right2;
+                        chk1.addEventListener('change', (e) => { decomp.z6Left1Right2 = e.target.checked; });
+
+                        const cb2 = document.createElement('label');
+                        cb2.innerHTML = '<input type="checkbox"> 右2左1';
+                        const chk2 = cb2.querySelector('input');
+                        chk2.checked = decomp.z6Right2Left1;
+                        chk2.addEventListener('change', (e) => { decomp.z6Right2Left1 = e.target.checked; });
+
+                        z6Checks.appendChild(cb1);
+                        z6Checks.appendChild(cb2);
+                        z6Row.appendChild(z6Checks);
+                        card.appendChild(z6Row);
+
+                        const z3Row = document.createElement('div');
+                        z3Row.className = 'mode-row';
+                        z3Row.innerHTML = `<span class="mode-label">组三</span>`;
+                        const z3Checks = document.createElement('div');
+                        z3Checks.className = 'mode-check-group';
+
+                        const cb3 = document.createElement('label');
+                        cb3.innerHTML = '<input type="checkbox"> 左单右重';
+                        const chk3 = cb3.querySelector('input');
+                        chk3.checked = decomp.z3LeftSingleRightDup;
+                        chk3.addEventListener('change', (e) => { decomp.z3LeftSingleRightDup = e.target.checked; });
+
+                        const cb4 = document.createElement('label');
+                        cb4.innerHTML = '<input type="checkbox"> 右单左重';
+                        const chk4 = cb4.querySelector('input');
+                        chk4.checked = decomp.z3RightSingleLeftDup;
+                        chk4.addEventListener('change', (e) => { decomp.z3RightSingleLeftDup = e.target.checked; });
+
+                        z3Checks.appendChild(cb3);
+                        z3Checks.appendChild(cb4);
+                        z3Row.appendChild(z3Checks);
+                        card.appendChild(z3Row);
+
+                        container.appendChild(card);
+                    });
+                }
+
+                function parseFullString(str) {
+                    const parts = str.split('-');
+                    if (parts.length !== 2) return null;
+                    const leftStr = parts[0].replace(/[^0-9]/g, '');
+                    const rightStr = parts[1].replace(/[^0-9]/g, '');
+                    const leftSet = new Set(leftStr.split('').map(Number));
+                    const rightSet = new Set(rightStr.split('').map(Number));
+                    if (leftSet.size === 0 && rightSet.size === 0) return null;
+                    return { left: leftSet, right: rightSet };
+                }
+
+                function getNumberType(numStr) {
+                    const arr = numStr.split('').map(Number);
+                    if (arr[0] === arr[1] && arr[1] === arr[2]) return 'baozi';
+                    if (arr[0] === arr[1] || arr[1] === arr[2] || arr[0] === arr[2]) return 'group3';
+                    return 'group6';
+                }
+
+                function passesAllDecomposes(numStr) {
+                    const type = getNumberType(numStr);
+                    for (let i = 0; i < decomps.length; i++) {
+                        const d = decomps[i];
+                        const parsed = parseFullString(d.full);
+                        if (!parsed) continue;
+                        const { left, right } = parsed;
+                        const digits = numStr.split('').map(Number);
+                        for (let digit of digits) {
+                            if (!left.has(digit) && !right.has(digit)) return false;
+                        }
+                        if (type === 'group6') {
+                            const leftCount = digits.filter(x => left.has(x)).length;
+                            const rightCount = 3 - leftCount;
+                            if (leftCount === 1 && rightCount === 2) {
+                                if (!d.z6Left1Right2) return false;
+                            } else if (leftCount === 2 && rightCount === 1) {
+                                if (!d.z6Right2Left1) return false;
+                            } else return false;
+                        } else if (type === 'group3') {
+                            const cnt = {};
+                            digits.forEach(v => cnt[v] = (cnt[v]||0)+1);
+                            let dupe = null, single = null;
+                            for (let [k, v] of Object.entries(cnt)) {
+                                if (v === 2) dupe = Number(k);
+                                else if (v === 1) single = Number(k);
+                            }
+                            if (!dupe || !single) return false;
+                            const singleLeft = left.has(single);
+                            const singleRight = right.has(single);
+                            const dupeLeft = left.has(dupe);
+                            const dupeRight = right.has(dupe);
+                            if (singleLeft && dupeRight) {
+                                if (!d.z3LeftSingleRightDup) return false;
+                            } else if (singleRight && dupeLeft) {
+                                if (!d.z3RightSingleLeftDup) return false;
+                            } else return false;
+                        } else if (type === 'baozi') {
+                            const d0 = digits[0];
+                            if (left.has(d0) && !right.has(d0)) continue;
+                            if (right.has(d0) && !left.has(d0)) continue;
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+
+                function generateDirect() {
+                    const results = [];
+                    for (let i = 0; i <= 999; i++) {
+                        const numStr = i.toString().padStart(3, '0');
+                        const type = getNumberType(numStr);
+                        if (type === 'baozi' && !globalBaozi.checked) continue;
+                        if (type === 'group3' && !globalGroup3.checked) continue;
+                        if (type === 'group6' && !globalGroup6.checked) continue;
+                        if (passesAllDecomposes(numStr)) results.push(numStr);
+                    }
+                    return results;
+                }
+
+                function generateGroup() {
+                    const results = [];
+                    if (globalGroup6.checked) {
+                        for (let a = 0; a <= 9; a++) {
+                            for (let b = a+1; b <= 9; b++) {
+                                for (let c = b+1; c <= 9; c++) {
+                                    const numStr = `${a}${b}${c}`;
+                                    if (passesAllDecomposes(numStr)) results.push(numStr);
+                                }
+                            }
+                        }
+                    }
+                    if (globalGroup3.checked) {
+                        for (let dupe = 0; dupe <= 9; dupe++) {
+                            for (let single = 0; single <= 9; single++) {
+                                if (dupe === single) continue;
+                                const numStr = `${dupe}${dupe}${single}`;
+                                if (passesAllDecomposes(numStr)) results.push(numStr);
+                            }
+                        }
+                    }
+                    if (globalBaozi.checked) {
+                        for (let d = 0; d <= 9; d++) {
+                            const numStr = `${d}${d}${d}`;
+                            if (passesAllDecomposes(numStr)) results.push(numStr);
+                        }
+                    }
+                    return [...new Set(results)];
+                }
+
+                function displayNumbers(numbers) {
+                    numbersGrid.innerHTML = '';
+                    if (!numbers.length) {
+                        numbersGrid.innerHTML = '<div class="placeholder">无匹配号码</div>';
+                        totalInfo.innerHTML = `总 <strong>0</strong> 注  <strong>0</strong>元`;
+                        return;
+                    }
+                    for (let i = 0; i < numbers.length; i += 7) {
+                        const row = document.createElement('div');
+                        row.className = 'grid-row';
+                        const chunk = numbers.slice(i, i+7);
+                        chunk.forEach(num => {
+                            const item = document.createElement('span');
+                            item.className = 'number-item';
+                            const cb = document.createElement('input');
+                            cb.type = 'checkbox';
+                            cb.value = num;
+                            item.appendChild(cb);
+                            item.appendChild(document.createTextNode(num));
+                            row.appendChild(item);
+                        });
+                        numbersGrid.appendChild(row);
+                    }
+                    totalInfo.innerHTML = `总 <strong>${numbers.length}</strong> 注  <strong>${numbers.length*2}</strong>元`;
+                }
+
+                function toggleSelectAll() {
+                    const checkboxes = document.querySelectorAll('#numbersGrid .number-item input[type="checkbox"]');
+                    if (!checkboxes.length) return;
+                    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                    checkboxes.forEach(cb => cb.checked = !allChecked);
+                }
+
+                function copySelected() {
+                    const checked = document.querySelectorAll('#numbersGrid .number-item input[type="checkbox"]:checked');
+                    if (!checked.length) return alert('请先选中号码');
+                    const text = Array.from(checked).map(cb => cb.value).join(' ');
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).then(() => {
+                            alert(`已复制 ${checked.length} 注`);
+                        }).catch(() => fallbackCopy(text));
+                    } else {
+                        fallbackCopy(text);
+                    }
+                }
+
+                function fallbackCopy(text) {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try {
+                        document.execCommand('copy');
+                        alert(`已复制 ${text.split(' ').length} 注`);
+                    } catch {
+                        prompt('复制失败，请手动复制', text);
+                    } finally {
+                        document.body.removeChild(ta);
+                    }
+                }
+
+                function generate(mode) {
+                    currentMode = mode;
+                    const numbers = mode === 'direct' ? generateDirect() : generateGroup();
+                    currentNumbers = numbers;
+                    displayNumbers(numbers);
+                }
+
+                genDirect.addEventListener('click', () => generate('direct'));
+                genGroup.addEventListener('click', () => generate('group'));
+                selectAllBtn.addEventListener('click', toggleSelectAll);
+                copyBtn.addEventListener('click', copySelected);
+                deleteBtn.addEventListener('click', () => {
+                    const checked = document.querySelectorAll('#numbersGrid .number-item input[type="checkbox"]:checked');
+                    if (!checked.length) return alert('请先选中要删除的号码');
+                    const toDelete = new Set(Array.from(checked).map(cb => cb.value));
+                    currentNumbers = currentNumbers.filter(n => !toDelete.has(n));
+                    displayNumbers(currentNumbers);
+                });
+
+                addBtn.addEventListener('click', () => {
+                    decomps.push({
+                        full: '',
+                        z6Left1Right2: true,
+                        z6Right2Left1: true,
+                        z3LeftSingleRightDup: true,
+                        z3RightSingleLeftDup: true
+                    });
+                    renderDecomposes();
+                });
+
+                renderDecomposes();
+            })();
+        </script>
+    </div>
+
+    <!-- 导航切换脚本 (支持三个工具) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btn1 = document.getElementById('btnTool1');
+            const btn2 = document.getElementById('btnTool2');
+            const btn3 = document.getElementById('btnTool3');
+            const wrapper1 = document.getElementById('tool1-wrapper');
+            const wrapper2 = document.getElementById('tool2-wrapper');
+            const wrapper3 = document.getElementById('tool3-wrapper');
+
+            function switchTool(active) {
+                btn1.classList.toggle('active', active === 1);
+                btn2.classList.toggle('active', active === 2);
+                btn3.classList.toggle('active', active === 3);
+                wrapper1.classList.toggle('active', active === 1);
+                wrapper2.classList.toggle('active', active === 2);
+                wrapper3.classList.toggle('active', active === 3);
+            }
+
+            btn1.addEventListener('click', () => switchTool(1));
+            btn2.addEventListener('click', () => switchTool(2));
+            btn3.addEventListener('click', () => switchTool(3));
+        });
+    </script>
+
+    <!-- Font Awesome 图标库 (供工具1使用) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</body>
+</html>
