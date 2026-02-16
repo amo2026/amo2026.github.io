@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>福彩3D双工具 · 精简版</title>
+    <title>福彩3D双工具 · 稳定版</title>
     <style>
         /* 全局导航样式 */
         * {
@@ -60,6 +60,7 @@
         .tool-wrapper.active {
             display: block;
         }
+        /* 工具内部容器 */
         .tool1-container, .tool2-container {
             width: 100%;
         }
@@ -72,7 +73,7 @@
         <button class="nav-btn" id="btnTool2">🔍 直选过滤</button>
     </div>
 
-    <!-- 工具1：交集计算系统（按钮文字修改：复制/下载/删除） -->
+    <!-- 工具1：交集计算系统 (直接嵌入) -->
     <div id="tool1-wrapper" class="tool-wrapper active">
         <div class="tool1-container">
             <style>
@@ -500,14 +501,14 @@
                         <div class="results-placeholder">等待计算结果...</div>
                     </div>
                     <div class="button-row" style="margin-top:10px;">
-                        <!-- 修改按钮文字：复制 / 下载 / 删除 -->
+                        <!-- 按钮文字已精简 -->
                         <button class="btn btn-outline" id="copy-results"><i class="fas fa-copy"></i> 复制</button>
                         <button class="btn btn-outline" id="export-results"><i class="fas fa-download"></i> 下载</button>
                         <button class="btn btn-danger" id="delete-selected"><i class="fas fa-trash"></i> 删除</button>
                     </div>
                 </div>
             </div>
-            <!-- 工具1脚本（保持不变，但需确保按钮ID正确） -->
+            <!-- 工具1脚本（保持不变） -->
             <script>
                 (function() {
                     let currentResults = [];
@@ -642,4 +643,568 @@
                         if (isDirect) {
                             for (let i = 0; i <= 999; i++) {
                                 const num = i.toString().padStart(3, '0');
-                                const d1=num[0], d2=num[1], d3=num[
+                                const d1=num[0], d2=num[1], d3=num[2];
+                                if (d1===d2 && d2===d3) { if (includeBZ) pool.add(num); }
+                                else if (d1===d2 || d2===d3 || d1===d3) { if (includeG3) pool.add(num); }
+                                else { if (includeG6) pool.add(num); }
+                            }
+                        } else {
+                            if (includeBZ) for (let i=0;i<=9;i++) pool.add(i.toString().repeat(3));
+                            if (includeG3) {
+                                for (let a=0;a<=9;a++) for (let b=0;b<=9;b++) {
+                                    if (a===b) continue;
+                                    pool.add(`${a}${a}${b}`); pool.add(`${a}${b}${a}`); pool.add(`${b}${a}${a}`);
+                                }
+                            }
+                            if (includeG6) {
+                                for (let a=0;a<=9;a++) for (let b=a+1;b<=9;b++) for (let c=b+1;c<=9;c++) {
+                                    const arr=[a,b,c]; const perms=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+                                    perms.forEach(p => pool.add(`${arr[p[0]]}${arr[p[1]]}${arr[p[2]]}`));
+                                }
+                            }
+                        }
+                        return Array.from(pool);
+                    }
+                    function getPositionConditions() {
+                        const cond = { hundredSelect:[], tenSelect:[], unitSelect:[], hundredKill:[], tenKill:[], unitKill:[] };
+                        ['hundred','ten','unit'].forEach(pos => {
+                            document.querySelectorAll(`#${pos} .number-btn-small`).forEach(btn => {
+                                if (btn.classList.contains('selected')) cond[`${pos}Select`].push(btn.dataset.number);
+                                else if (btn.classList.contains('kill-selected')) cond[`${pos}Kill`].push(btn.dataset.number);
+                            });
+                        });
+                        return cond;
+                    }
+                    function applyPositionFilter(numbers, cond) {
+                        return numbers.filter(num => {
+                            const h=num[0], t=num[1], u=num[2];
+                            if (cond.hundredSelect.length && !cond.hundredSelect.includes(h)) return false;
+                            if (cond.tenSelect.length && !cond.tenSelect.includes(t)) return false;
+                            if (cond.unitSelect.length && !cond.unitSelect.includes(u)) return false;
+                            if (cond.hundredKill.length && cond.hundredKill.includes(h)) return false;
+                            if (cond.tenKill.length && cond.tenKill.includes(t)) return false;
+                            if (cond.unitKill.length && cond.unitKill.includes(u)) return false;
+                            return true;
+                        });
+                    }
+                    function renderResults(nums) {
+                        const container = document.getElementById('intersection-results');
+                        container.innerHTML = '';
+                        if (nums.length === 0) {
+                            container.innerHTML = '<div class="results-placeholder">没有找到符合条件的号码</div>';
+                            return;
+                        }
+                        const sorted = nums.sort((a,b) => a[0].localeCompare(b[0]));
+                        sorted.forEach((num, idx) => {
+                            const span = document.createElement('span');
+                            span.className = 'number-item';
+                            span.textContent = num;
+                            span.dataset.number = num;
+                            const del = document.createElement('span');
+                            del.className = 'delete-btn';
+                            del.innerHTML = '×';
+                            span.appendChild(del);
+                            span.addEventListener('click', function(e) {
+                                if (e.target !== del) this.classList.toggle('selected');
+                            });
+                            del.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                if (confirm(`删除号码 ${span.dataset.number} ？`)) {
+                                    const idx = currentResults.indexOf(span.dataset.number);
+                                    if (idx > -1) currentResults.splice(idx,1);
+                                    renderResults(currentResults);
+                                    updateStats();
+                                }
+                            });
+                            container.appendChild(span);
+                            if ((idx+1) % 7 === 0) container.appendChild(document.createElement('br'));
+                        });
+                    }
+                    function updateStats() {
+                        document.getElementById('result-count').textContent = currentResults.length;
+                        document.getElementById('result-price').textContent = currentResults.length * 2;
+                    }
+                    document.getElementById('calculate-intersection').addEventListener('click', function() {
+                        const sets = [];
+                        document.querySelectorAll('textarea[id^="input"]').forEach(input => {
+                            const text = input.value.trim();
+                            if (text) {
+                                const nums = text.split(/\s+/).filter(n => n.length===3);
+                                if (nums.length) sets.push(new Set(nums));
+                            }
+                        });
+                        if (sets.length < 2) { alert('请至少填写两个条件框的号码'); return; }
+                        const pool = generateConditionPool();
+                        if (pool.length === 0) { alert('当前形态设置下没有生成任何号码，请至少勾选一种包含类型'); return; }
+                        sets.unshift(new Set(pool));
+                        let intersection = [...sets[0]];
+                        for (let i = 1; i < sets.length; i++) intersection = intersection.filter(n => sets[i].has(n));
+                        const posCond = getPositionConditions();
+                        if (Object.values(posCond).some(arr => arr.length)) intersection = applyPositionFilter(intersection, posCond);
+                        currentResults = intersection;
+                        renderResults(currentResults);
+                        updateStats();
+                    });
+                    document.getElementById('copy-results').addEventListener('click', function() {
+                        if (!currentResults.length) return alert('没有可复制的结果');
+                        let text = '';
+                        currentResults.forEach((n,i) => { text += n + ' '; if ((i+1)%7===0) text += '\n'; });
+                        navigator.clipboard.writeText(text.trim()).then(() => alert('已复制到剪贴板')).catch(() => { alert('复制失败，请手动复制'); });
+                    });
+                    document.getElementById('export-results').addEventListener('click', function() {
+                        if (!currentResults.length) return alert('没有可导出的结果');
+                        let resultText = '';
+                        currentResults.forEach((n,i) => { resultText += n + ' '; if ((i+1)%7===0) resultText += '\n'; });
+                        const cond = getPositionConditions();
+                        let condStr = '';
+                        ['hundred','ten','unit'].forEach(p => { if(cond[`${p}Select`].length) condStr += `${p==='hundred'?'百位':p==='ten'?'十位':'个位'}选号: ${cond[`${p}Select`].join(' ')}\n`; if(cond[`${p}Kill`].length) condStr += `${p==='hundred'?'百位':p==='ten'?'十位':'个位'}杀号: ${cond[`${p}Kill`].join(' ')}\n`; });
+                        const content = `福彩3D交集计算结果\n生成时间: ${new Date().toLocaleString()}\n\n筛选条件:\n${condStr || '无'}\n交集结果 (${currentResults.length}注，总价${currentResults.length*2}元):\n${resultText.trim()}`;
+                        const blob = new Blob([content], {type:'text/plain'});
+                        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `3D交集结果_${Date.now()}.txt`; a.click(); URL.revokeObjectURL(a.href);
+                    });
+                    document.getElementById('delete-selected').addEventListener('click', function() {
+                        const selected = document.querySelectorAll('.number-item.selected');
+                        if (!selected.length) return alert('请先选中要删除的号码');
+                        if (confirm(`确定删除选中的 ${selected.length} 个号码？`)) {
+                            const toDel = new Set(Array.from(selected).map(el => el.dataset.number));
+                            currentResults = currentResults.filter(n => !toDel.has(n));
+                            renderResults(currentResults);
+                            updateStats();
+                        }
+                    });
+                    initNumberSelectors();
+                    initInputCounters();
+                    document.getElementById('intersection-results').innerHTML = '<div class="results-placeholder">等待计算结果...</div>';
+                })();
+            </script>
+        </div>
+    </div>
+
+    <!-- 工具2：直选过滤 (直接嵌入，已移除提示文字、复选框，每行7个) -->
+    <div id="tool2-wrapper" class="tool-wrapper">
+        <div class="tool2-container">
+            <style>
+                .tool2-container {
+                    all: initial;
+                    display: block;
+                    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                    background-color: #f8f9fa;
+                    color: #333;
+                    padding: 12px;
+                    font-size: 14px;
+                }
+                .tool2-container * {
+                    box-sizing: border-box;
+                }
+                .tool2-container .section {
+                    background-color: white;
+                    padding: 12px;
+                    margin-bottom: 10px;
+                    border-radius: 5px;
+                    border: 1px solid #ddd;
+                }
+                .tool2-container .input-area {
+                    width: 100%;
+                    min-height: 100px;
+                    padding: 8px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    font-size: 0.85rem;
+                    resize: vertical;
+                    margin-bottom: 10px;
+                    font-family: monospace;
+                }
+                .tool2-container .period-selector {
+                    display: flex;
+                    gap: 6px;
+                    margin-bottom: 10px;
+                }
+                .tool2-container .period-option {
+                    flex: 1;
+                }
+                .tool2-container .period-option input {
+                    display: none;
+                }
+                .tool2-container .period-label {
+                    display: block;
+                    padding: 8px 2px;
+                    background-color: #f0f0f0;
+                    border-radius: 4px;
+                    text-align: center;
+                    cursor: pointer;
+                    font-size: 0.8rem;
+                    border: 1px solid #ccc;
+                }
+                .tool2-container .period-option input:checked + .period-label {
+                    background-color: #7f8fa6;
+                    color: white;
+                    border-color: #7f8fa6;
+                }
+                .tool2-container .btn-row {
+                    display: flex;
+                    gap: 6px;
+                    margin-bottom: 10px;
+                }
+                .tool2-container .btn {
+                    flex: 1;
+                    padding: 10px 6px;
+                    border: none;
+                    border-radius: 4px;
+                    font-size: 0.8rem;
+                    font-weight: 500;
+                    cursor: pointer;
+                    text-align: center;
+                    white-space: nowrap;
+                }
+                .tool2-container .btn-primary {
+                    background-color: #7f8fa6;
+                    color: white;
+                }
+                .tool2-container .btn-secondary {
+                    background-color: #f0f0f0;
+                    color: #333;
+                    border: 1px solid #ccc;
+                }
+                .tool2-container .btn-info {
+                    background-color: #95a5a6;
+                    color: white;
+                }
+                .tool2-container .stats {
+                    display: flex;
+                    justify-content: space-between;
+                    background-color: #f8f9ff;
+                    border-radius: 4px;
+                    padding: 10px;
+                    margin-bottom: 10px;
+                    border: 1px solid #e0e0e0;
+                }
+                .tool2-container .stat-item {
+                    text-align: center;
+                }
+                .tool2-container .stat-value {
+                    font-size: 1.2rem;
+                    font-weight: bold;
+                    color: #7f8fa6;
+                }
+                .tool2-container .stat-label {
+                    font-size: 0.75rem;
+                    color: #666;
+                }
+                .tool2-container .action-buttons {
+                    display: flex;
+                    gap: 6px;
+                    margin-bottom: 10px;
+                }
+                .tool2-container .action-buttons .btn {
+                    font-size: 0.7rem;
+                    padding: 6px 2px;
+                }
+                .tool2-container .numbers-container {
+                    max-height: 250px;
+                    overflow-y: auto;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 4px;
+                    padding: 8px;
+                    margin-bottom: 10px;
+                }
+                .tool2-container .numbers-grid {
+                    display: grid;
+                    grid-template-columns: repeat(7, 1fr);
+                    gap: 4px;
+                }
+                .tool2-container .number-item {
+                    text-align: center;
+                    padding: 6px 0;
+                    background-color: white;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 4px;
+                    font-weight: 500;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    transition: background-color 0.1s;
+                    user-select: none;
+                }
+                .tool2-container .number-item.selected {
+                    background-color: #7f8fa6;
+                    color: white;
+                    border-color: #6b7b93;
+                }
+                .tool2-container .message-box {
+                    position: fixed;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background-color: #7f8fa6;
+                    color: white;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    z-index: 1000;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                }
+                .tool2-container .message-box.show {
+                    opacity: 1;
+                }
+            </style>
+            <!-- 工具2核心内容 -->
+            <div class="tool2-container">
+                <div class="section">
+                    <textarea class="input-area" id="filter_historyData" placeholder="粘贴历史开奖号码，格式：2024009 265（每行一个）"></textarea>
+                    <!-- 已移除提示文字 -->
+                </div>
+                
+                <div class="section">
+                    <div class="period-selector">
+                        <div class="period-option">
+                            <input type="radio" id="filter_period50" name="filter_period" value="50" checked>
+                            <label class="period-label" for="filter_period50">50期</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="filter_period150" name="filter_period" value="150">
+                            <label class="period-label" for="filter_period150">150期</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="filter_period300" name="filter_period" value="300">
+                            <label class="period-label" for="filter_period300">300期</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="filter_period500" name="filter_period" value="500">
+                            <label class="period-label" for="filter_period500">500期</label>
+                        </div>
+                        <div class="period-option">
+                            <input type="radio" id="filter_period1000" name="filter_period" value="1000">
+                            <label class="period-label" for="filter_period1000">1000期</label>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-row">
+                        <button class="btn btn-primary" id="filter_calculateBtn">开始计算</button>
+                        <button class="btn btn-secondary" id="filter_clearBtn">清空</button>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="filter_remainingCount">1000</div>
+                            <div class="stat-label">剩余注数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="filter_selectedCount">0</div>
+                            <div class="stat-label">已选择</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="filter_totalPrice">0</div>
+                            <div class="stat-label">金额(元)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" id="filter_selectAllBtn">全选</button>
+                        <button class="btn btn-secondary" id="filter_deselectAllBtn">取消全选</button>
+                        <button class="btn btn-secondary" id="filter_deleteSelectedBtn">删除所选</button>
+                        <button class="btn btn-secondary" id="filter_keepSelectedBtn">保留所选</button>
+                    </div>
+                    
+                    <div class="numbers-container">
+                        <div class="numbers-grid" id="filter_numbersGrid"></div>
+                    </div>
+                    
+                    <div class="btn-row">
+                        <button class="btn btn-info" id="filter_copyAllBtn">复制全部</button>
+                        <button class="btn btn-info" id="filter_copySelectedBtn">复制所选</button>
+                    </div>
+                </div>
+                <div style="text-align:center; padding:10px; color:#666; font-size:0.7rem;">理性参考</div>
+            </div>
+
+            <!-- 工具2脚本（点击选中变色，无复选框） -->
+            <script>
+                (function() {
+                    let allNumbers = Array.from({length: 1000}, (_, i) => i.toString().padStart(3, '0'));
+                    let currentNumbers = [...allNumbers];
+                    let selectedNumbers = new Set();
+                    
+                    const historyDataEl = document.getElementById('filter_historyData');
+                    const numbersGridEl = document.getElementById('filter_numbersGrid');
+                    const remainingCountEl = document.getElementById('filter_remainingCount');
+                    const selectedCountEl = document.getElementById('filter_selectedCount');
+                    const totalPriceEl = document.getElementById('filter_totalPrice');
+                    const messageBox = document.getElementById('filter_messageBox') || (() => {
+                        const mb = document.createElement('div');
+                        mb.className = 'message-box';
+                        mb.id = 'filter_messageBox';
+                        document.body.appendChild(mb);
+                        return mb;
+                    })();
+                    
+                    const sampleData = `2024009\t265
+2024010\t437
+2024011\t927
+2024012\t590
+2024013\t468
+2024014\t251
+2024015\t438
+2024016\t920
+2024017\t659
+2024018\t347`;
+                    
+                    function showMessage(text) {
+                        messageBox.textContent = text;
+                        messageBox.classList.add('show');
+                        setTimeout(() => messageBox.classList.remove('show'), 2000);
+                    }
+                    
+                    function renderNumbers() {
+                        numbersGridEl.innerHTML = '';
+                        if (currentNumbers.length === 0) {
+                            numbersGridEl.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:#666;">没有符合条件的号码</div>';
+                        } else {
+                            currentNumbers.forEach(number => {
+                                const isSelected = selectedNumbers.has(number);
+                                const item = document.createElement('div');
+                                item.className = 'number-item' + (isSelected ? ' selected' : '');
+                                item.textContent = number;
+                                item.dataset.number = number;
+                                item.addEventListener('click', function(e) {
+                                    const num = this.dataset.number;
+                                    if (selectedNumbers.has(num)) {
+                                        selectedNumbers.delete(num);
+                                        this.classList.remove('selected');
+                                    } else {
+                                        selectedNumbers.add(num);
+                                        this.classList.add('selected');
+                                    }
+                                    updateStats();
+                                });
+                                numbersGridEl.appendChild(item);
+                            });
+                        }
+                        updateStats();
+                    }
+                    
+                    function updateStats() {
+                        remainingCountEl.textContent = currentNumbers.length;
+                        selectedCountEl.textContent = selectedNumbers.size;
+                        totalPriceEl.textContent = (selectedNumbers.size * 2).toFixed(0);
+                    }
+                    
+                    function parseHistoryData() {
+                        let data = historyDataEl.value.trim();
+                        if (!data) return [];
+                        const lines = data.split('\n');
+                        const nums = [];
+                        lines.forEach(line => {
+                            const trimmed = line.trim();
+                            if (!trimmed) return;
+                            const parts = trimmed.split(/\s+/);
+                            if (parts.length >= 2 && /^\d{3}$/.test(parts[1])) nums.push(parts[1]);
+                            else {
+                                const match = trimmed.match(/\d{3}/);
+                                if (match) nums.push(match[0]);
+                            }
+                        });
+                        return nums;
+                    }
+                    
+                    function filterNumbers() {
+                        const selectedPeriod = document.querySelector('input[name="filter_period"]:checked').value;
+                        const period = parseInt(selectedPeriod);
+                        let history = parseHistoryData();
+                        let recent = [];
+                        if (history.length === 0) {
+                            const sampleLines = sampleData.split('\n');
+                            sampleLines.forEach(l => { let p = l.split(/\s+/); if(p[1]) recent.push(p[1]); });
+                            recent = recent.slice(-period);
+                            showMessage(`使用示例数据 (${recent.length}期)`);
+                        } else {
+                            recent = history.slice(-period);
+                        }
+                        currentNumbers = allNumbers.filter(n => !recent.includes(n));
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage(`过滤完成，剩余${currentNumbers.length}注`);
+                    }
+                    
+                    document.getElementById('filter_calculateBtn').addEventListener('click', filterNumbers);
+                    document.getElementById('filter_clearBtn').addEventListener('click', function() {
+                        historyDataEl.value = '';
+                        currentNumbers = [...allNumbers];
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage('已重置为全部1000注');
+                    });
+                    document.getElementById('filter_selectAllBtn').addEventListener('click', function() {
+                        currentNumbers.forEach(n => selectedNumbers.add(n));
+                        renderNumbers();
+                        showMessage(`已全选 ${selectedNumbers.size} 注`);
+                    });
+                    document.getElementById('filter_deselectAllBtn').addEventListener('click', function() {
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage('已取消全选');
+                    });
+                    document.getElementById('filter_deleteSelectedBtn').addEventListener('click', function() {
+                        if (selectedNumbers.size === 0) return showMessage('请先选择号码');
+                        currentNumbers = currentNumbers.filter(n => !selectedNumbers.has(n));
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage('已删除所选号码');
+                    });
+                    document.getElementById('filter_keepSelectedBtn').addEventListener('click', function() {
+                        if (selectedNumbers.size === 0) return showMessage('请先选择要保留的号码');
+                        currentNumbers = currentNumbers.filter(n => selectedNumbers.has(n));
+                        selectedNumbers.clear();
+                        renderNumbers();
+                        showMessage('已保留所选号码');
+                    });
+                    
+                    function generateCopyText(arr) {
+                        if (!arr.length) return '';
+                        let text = '';
+                        arr.forEach((n,i) => { text += n; if ((i+1)%7===0) text += '\n'; else if (i<arr.length-1) text += ' '; });
+                        return text;
+                    }
+                    
+                    document.getElementById('filter_copyAllBtn').addEventListener('click', function() {
+                        if (!currentNumbers.length) return showMessage('没有号码可复制');
+                        const text = generateCopyText(currentNumbers);
+                        navigator.clipboard?.writeText(text).then(() => showMessage('复制成功')).catch(() => alert('手动复制'));
+                    });
+                    document.getElementById('filter_copySelectedBtn').addEventListener('click', function() {
+                        if (selectedNumbers.size === 0) return showMessage('没有选中号码');
+                        const text = generateCopyText(Array.from(selectedNumbers));
+                        navigator.clipboard?.writeText(text).then(() => showMessage('复制成功')).catch(() => alert('手动复制'));
+                    });
+                    
+                    renderNumbers();
+                })();
+            </script>
+        </div>
+    </div>
+
+    <!-- 导航切换脚本（确保在DOM加载后执行） -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btn1 = document.getElementById('btnTool1');
+            const btn2 = document.getElementById('btnTool2');
+            const wrapper1 = document.getElementById('tool1-wrapper');
+            const wrapper2 = document.getElementById('tool2-wrapper');
+
+            function switchTool(active) {
+                btn1.classList.toggle('active', active === 1);
+                btn2.classList.toggle('active', active === 2);
+                wrapper1.classList.toggle('active', active === 1);
+                wrapper2.classList.toggle('active', active === 2);
+            }
+
+            btn1.addEventListener('click', () => switchTool(1));
+            btn2.addEventListener('click', () => switchTool(2));
+        });
+    </script>
+
+    <!-- Font Awesome 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</body>
+</html>
