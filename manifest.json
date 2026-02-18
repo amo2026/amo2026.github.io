@@ -1,6 +1,7 @@
 {
   "name": "你的3D网站",
   "short_name": "3D",
+  "description": "福彩3D工具，计算交集，用分解生成直选，历史号码过滤",
   "start_url": "/fc3d.html",
   "display": "standalone",
   "background_color": "#ffffff",
