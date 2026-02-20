@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D选码计算神器</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+            line-height: 1.2;
+            padding: 4px;
+            min-height: 100vh;
+            font-size: 11px;
+        }
+        
+        .container {
+            max-width: 100%;
+            background-color: white;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+            color: white;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 16px;
+            margin-bottom: 2px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 10px;
+        }
+        
+        .section {
+            padding: 8px;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1a73e8;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title:before {
+            content: "";
+            display: inline-block;
+            width: 3px;
+            height: 10px;
+            background-color: #1a73e8;
+            margin-right: 6px;
+        }
+        
+        .selection-type {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        
+        .radio-group {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            gap: 4px;
+        }
+        
+        .radio-option {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3px 0;
+            border: 1px solid #d1d9e6;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            cursor: pointer;
+        }
+        
+        .radio-option input {
+            display: none;
+        }
+        
+        .radio-option label {
+            cursor: pointer;
+            font-size: 10px;
+            letter-spacing: 0.2px;
+        }
+        
+        .radio-option input:checked + label {
+            color: #1a73e8;
+            font-weight: 600;
+        }
+        
+        .radio-option.active {
+            background-color: #e8f0fe;
+            border-color: #1a73e8;
+        }
+        
+        .position-selection {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .position-box {
+            background-color: #f9fafc;
+            padding: 8px;
+            border: 1px solid #e1e5eb;
+            border-radius: 4px;
+        }
+        
+        .position-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 11px;
+            color: #1a73e8;
+            text-align: center;
+        }
+        
+        .number-row {
+            display: flex;
+            flex-wrap: nowrap;
+            justify-content: space-between;
+            gap: 2px;
+            margin-bottom: 6px;
+        }
+        
+        .number-checkbox {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        
+        .number-checkbox input {
+            display: none;
+        }
+        
+        .number-checkbox label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-width: 22px;
+            height: 22px;
+            background-color: white;
+            border: 1px solid #d1d9e6;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 10px;
+            border-radius: 2px;
+        }
+        
+        .number-checkbox input:checked + label {
+            background-color: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+        
+        .quick-select {
+            display: flex;
+            justify-content: space-between;
+            gap: 4px;
+        }
+        
+        .quick-btn {
+            flex: 1;
+            padding: 4px 0;
+            border: 1px solid #d1d9e6;
+            background-color: white;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.2s ease;
+            border-radius: 2px;
+            letter-spacing: 0.2px;
+        }
+        
+        .quick-btn:hover, .quick-btn:active {
+            background-color: #f0f3f9;
+        }
+        
+        .non-positioned-selection {
+            display: none;
+        }
+        
+        .custom-selection {
+            display: none;
+        }
+        
+        .condition-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .option-group {
+            margin-bottom: 3px;
+        }
+        
+        .option-group-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #444;
+            font-size: 11px;
+        }
+        
+        .radio-group-type {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            gap: 4px;
+        }
+        
+        .radio-option-type {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px 0;
+            border: 1px solid #d1d9e6;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            cursor: pointer;
+        }
+        
+        .radio-option-type input {
+            display: none;
+        }
+        
+        .radio-option-type label {
+            cursor: pointer;
+            font-size: 11px;
+            letter-spacing: 0.2px;
+        }
+        
+        .radio-option-type input:checked + label {
+            color: white;
+            font-weight: 600;
+        }
+        
+        .radio-option-type.active {
+            background-color: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+        
+        .checkbox-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .checkbox-option {
+            display: flex;
+            align-items: center;
+        }
+        
+        .checkbox-option input {
+            margin-right: 3px;
+        }
+        
+        .analyze-btn-container {
+            text-align: center;
+            margin: 12px 0 8px 0;
+        }
+        
+        .analyze-btn {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(26, 115, 232, 0.2);
+            width: 100%;
+            max-width: 200px;
+            border-radius: 4px;
+            letter-spacing: 0.3px;
+        }
+        
+        .analyze-btn:hover, .analyze-btn:active {
+            background-color: #0d62d9;
+        }
+        
+        .result-section {
+            background-color: #f0f7ff;
+            padding: 10px;
+            border: 1px solid #cce0ff;
+            border-radius: 4px;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .result-title {
+            font-weight: 600;
+            font-size: 11px;
+            color: #1a73e8;
+        }
+        
+        .result-count {
+            font-weight: 600;
+            font-size: 12px;
+            color: #e74c3c;
+        }
+        
+        .filter-section {
+            background-color: white;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #e1e5eb;
+            border-radius: 4px;
+        }
+        
+        .filter-group {
+            margin-bottom: 8px;
+            border: 1px solid #e1e5eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            border-bottom: 1px solid #e1e5eb;
+        }
+        
+        .filter-title {
+            font-weight: 600;
+            color: #444;
+            font-size: 11px;
+        }
+        
+        .filter-toggle {
+            font-size: 11px;
+            transition: transform 0.3s ease;
+        }
+        
+        .filter-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .filter-content.expanded {
+            max-height: 500px;
+            padding: 8px;
+        }
+        
+        .filter-subtitle {
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #555;
+            font-size: 10px;
+        }
+        
+        .filter-numbers {
+            display: flex;
+            flex-wrap: nowrap;
+            justify-content: space-between;
+            gap: 2px;
+            margin-bottom: 8px;
+        }
+        
+        .filter-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            min-width: 20px;
+            height: 20px;
+            background-color: white;
+            border: 1px solid #d1d9e6;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 10px;
+            border-radius: 2px;
+        }
+        
+        .filter-number.active {
+            background-color: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+        
+        .filter-number.kill.active {
+            background-color: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+        
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .filter-option {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 20px;
+            background-color: white;
+            border: 1px solid #d1d9e6;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 10px;
+            border-radius: 2px;
+        }
+        
+        .filter-option.active {
+            background-color: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+        
+        .filter-option.kill.active {
+            background-color: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+        
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .pattern-option {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 22px;
+            background-color: white;
+            border: 1px solid #d1d9e6;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 10px;
+            border-radius: 2px;
+        }
+        
+        .pattern-option.active {
+            background-color: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+        
+        .pattern-option.kill.active {
+            background-color: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 4px;
+            margin-top: 10px;
+        }
+        
+        .filter-btn {
+            flex: 1;
+            padding: 8px 0;
+            border: 1px solid #d1d9e6;
+            background-color: white;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+            letter-spacing: 0.2px;
+            font-weight: 600;
+        }
+        
+        .filter-btn.apply {
+            background-color: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+        
+        .filter-btn.clear {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .action-buttons-row2 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .btn {
+            padding: 8px 0;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            letter-spacing: 0.2px;
+        }
+        
+        .btn-select-all {
+            background-color: #f8f9fa;
+            color: #1a73e8;
+            border: 1px solid #d1d9e6;
+        }
+        
+        .btn-cancel {
+            background-color: #f8f9fa;
+            color: #666;
+            border: 1px solid #d1d9e6;
+        }
+        
+        .btn-keep {
+            background-color: #f8f9fa;
+            color: #34a853;
+            border: 1px solid #d1d9e6;
+        }
+        
+        .btn-delete {
+            background-color: #f8f9fa;
+            color: #e74c3c;
+            border: 1px solid #dee2e6;
+        }
+        
+        .btn-copy {
+            background-color: #f8f9fa;
+            color: #333;
+            border: 1px solid #dee2e6;
+        }
+        
+        .btn-export {
+            background-color: #f8f9fa;
+            color: #333;
+            border: 1px solid #dee2e6;
+        }
+        
+        .btn-reset {
+            background-color: #1a73e8;
+            color: white;
+            border: 1px solid #1a73e8;
+            padding: 10px 0;
+            font-size: 12px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 4px;
+            border-radius: 4px;
+        }
+        
+        .result-list-container {
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid #e1e5eb;
+            background-color: white;
+            padding: 6px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+        
+        .result-list {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+        }
+        
+        .number-item {
+            display: flex;
+            align-items: center;
+            padding: 3px;
+            background-color: white;
+            border: 1px solid #e1e5eb;
+            justify-content: center;
+            font-size: 10px;
+            border-radius: 2px;
+        }
+        
+        .number-item input {
+            margin-right: 3px;
+        }
+        
+        .number-item span {
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .empty-result {
+            text-align: center;
+            color: #888;
+            padding: 20px 10px;
+            grid-column: 1/-1;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 8px;
+            color: #777;
+            font-size: 9px;
+            border-top: 1px solid #eaeaea;
+            background-color: #f9fafc;
+        }
+        
+        .highlight {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+        
+        .note {
+            margin-top: 8px;
+            padding: 8px;
+            background-color: #fff8e1;
+            border-left: 2px solid #ffc107;
+            font-size: 10px;
+            color: #666;
+            border-radius: 4px;
+        }
+        
+        .note ul {
+            margin-top: 3px;
+            margin-left: 12px;
+        }
+        
+        .note li {
+            margin-bottom: 1px;
+        }
+        
+        .contact {
+            color: #1a73e8;
+            font-weight: 600;
+        }
+        
+        .error-message {
+            background-color: #ffeaea;
+            color: #e74c3c;
+            border: 1px solid #ffcdd2;
+            padding: 6px;
+            margin-bottom: 8px;
+            text-align: center;
+            font-size: 10px;
+            display: none;
+            border-radius: 4px;
+        }
+        
+        .custom-textarea {
+            width: 100%;
+            height: 80px;
+            padding: 6px;
+            border: 1px solid #d1d9e6;
+            font-size: 10px;
+            resize: none;
+            border-radius: 4px;
+            margin-bottom: 6px;
+        }
+        
+        .custom-note {
+            font-size: 9px;
+            color: #888;
+            margin-bottom: 6px;
+            font-style: italic;
+        }
+        
+        .hidden-section {
+            display: none;
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        .custom-analyze-btn {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 8px 0;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(26, 115, 232, 0.2);
+            width: 100%;
+            border-radius: 4px;
+            letter-spacing: 0.3px;
+        }
+        
+        .custom-analyze-btn:hover, .custom-analyze-btn:active {
+            background-color: #0d62d9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>3D选码计算神器</h1>
+            <p>选择您的复试号码，筛选缩水，计算注数和金额</p>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">号码选项</div>
+            
+            <div class="selection-type">
+                <div class="radio-group">
+                    <div class="radio-option" id="positionedOption">
+                        <input type="radio" id="positioned" name="selectionType" value="positioned">
+                        <label for="positioned">定位选号</label>
+                    </div>
+                    <div class="radio-option active" id="nonPositionedOption">
+                        <input type="radio" id="non-positioned" name="selectionType" value="non-positioned" checked>
+                        <label for="non-positioned">不定位选号</label>
+                    </div>
+                    <div class="radio-option" id="customOption">
+                        <input type="radio" id="custom" name="selectionType" value="custom">
+                        <label for="custom">自定义选号</label>
+                    </div>
+                </div>
+            </div>
+            
+            <p style="margin-bottom: 8px; color: #666; font-size: 10px;">点击号码小框选择您的复式号码：</p>
+            
+            <!-- 定位选号区域 -->
+            <div class="position-selection" id="positionedSelection">
+                <!-- 百位 -->
+                <div class="position-box">
+                    <div class="position-title">百位</div>
+                    <div class="number-row" id="hundreds">
+                        <!-- 通过JS动态生成 -->
+                    </div>
+                    <div class="quick-select">
+                        <button type="button" class="quick-btn" data-position="hundreds" data-type="odd">单</button>
+                        <button type="button" class="quick-btn" data-position="hundreds" data-type="even">双</button>
+                        <button type="button" class="quick-btn" data-position="hundreds" data-type="all">全</button>
+                    </div>
+                </div>
+                
+                <!-- 十位 -->
+                <div class="position-box">
+                    <div class="position-title">十位</div>
+                    <div class="number-row" id="tens">
+                        <!-- 通过JS动态生成 -->
+                    </div>
+                    <div class="quick-select">
+                        <button type="button" class="quick-btn" data-position="tens" data-type="odd">单</button>
+                        <button type="button" class="quick-btn" data-position="tens" data-type="even">双</button>
+                        <button type="button" class="quick-btn" data-position="tens" data-type="all">全</button>
+                    </div>
+                </div>
+                
+                <!-- 个位 -->
+                <div class="position-box">
+                    <div class="position-title">个位</div>
+                    <div class="number-row" id="units">
+                        <!-- 通过JS动态生成 -->
+                    </div>
+                    <div class="quick-select">
+                        <button type="button" class="quick-btn" data-position="units" data-type="odd">单</button>
+                        <button type="button" class="quick-btn" data-position="units" data-type="even">双</button>
+                        <button type="button" class="quick-btn" data-position="units" data-type="all">全</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 不定位选号区域 -->
+            <div class="non-positioned-selection" id="nonPositionedSelection">
+                <div class="position-box">
+                    <div class="position-title">不定位选号</div>
+                    <div class="number-row" id="nonPositionedNumbers">
+                        <!-- 通过JS动态生成 -->
+                    </div>
+                    <div class="quick-select">
+                        <button type="button" class="quick-btn" data-position="nonPositioned" data-type="odd">单</button>
+                        <button type="button" class="quick-btn" data-position="nonPositioned" data-type="even">双</button>
+                        <button type="button" class="quick-btn" data-position="nonPositioned" data-type="all">全</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 自定义选号区域 -->
+            <div class="custom-selection" id="customSelection">
+                <div class="position-box">
+                    <div class="position-title">自定义选号</div>
+                    <textarea class="custom-textarea" id="customNumbers" placeholder="请输入或粘贴号码（用空格或逗号分开）&#10;例如：123 456 789 012 345 678 901 234 567 890&#10;提示：粘贴后会自动整理为每行5个号码显示"></textarea>
+                    <div class="custom-note">提示：输入或粘贴号码后会自动整理为每行5个号码显示</div>
+                    <button type="button" class="custom-analyze-btn" id="processCustomBtn">开始分析</button>
+                </div>
+            </div>
+            
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+        
+        <!-- 条件选项区域（定位和不定位选号显示） -->
+        <div class="section" id="conditionSection">
+            <div class="section-title">条件选项</div>
+            
+            <div class="condition-options">
+                <div class="option-group">
+                    <div class="option-group-title">生成类型</div>
+                    <div class="radio-group-type">
+                        <div class="radio-option-type active" id="straightOption">
+                            <input type="radio" id="straight" name="generateType" value="straight" checked>
+                            <label for="straight">生成所有直选</label>
+                        </div>
+                        <div class="radio-option-type" id="groupOption">
+                            <input type="radio" id="group" name="generateType" value="group">
+                            <label for="group">生成所有组选</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="option-group">
+                    <div class="option-group-title">包含类型（直选/组选模式都有效）</div>
+                    <div class="checkbox-options">
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="group3" name="includeTypes" value="group3" checked>
+                            <label for="group3">包含组三</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="group6" name="includeTypes" value="group6" checked>
+                            <label for="group6">包含组六</label>
+                        </div>
+                        <div class="checkbox-option">
+                            <input type="checkbox" id="leopard" name="includeTypes" value="leopard" checked>
+                            <label for="leopard">包含豹子</label>
+                        </div>
+                    </div>
+                    <p style="font-size: 9px; color: #888; margin-top: 4px;">说明：若不选则为包含全部</p>
+                </div>
+            </div>
+            
+            <div class="analyze-btn-container">
+                <button type="button" class="analyze-btn" id="analyzeBtn">
+                    开始分析
+                </button>
+            </div>
+        </div>
+        
+        <!-- 筛选功能区域 -->
+        <div class="section" id="filterSection">
+            <div class="section-title">筛选缩水功能</div>
+            
+            <div class="filter-section">
+                <!-- 胆码选杀 -->
+                <div class="filter-group">
+                    <div class="filter-header" data-target="danmaFilter">
+                        <div class="filter-title">胆码选杀</div>
+                        <div class="filter-toggle">+</div>
+                    </div>
+                    <div class="filter-content" id="danmaFilter">
+                        <!-- 选码 -->
+                        <div style="margin-bottom: 6px;">
+                            <div class="filter-subtitle">选码（可多选，包含任意一个选码即保留）</div>
+                            <div class="filter-numbers" id="selectNumbers">
+                                <!-- 通过JS动态生成 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 杀码 -->
+                        <div>
+                            <div class="filter-subtitle">杀码（可多选，不包含所有杀码即保留）</div>
+                            <div class="filter-numbers" id="killNumbers">
+                                <!-- 通过JS动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 和值选杀 -->
+                <div class="filter-group">
+                    <div class="filter-header" data-target="hezhiFilter">
+                        <div class="filter-title">和值选杀</div>
+                        <div class="filter-toggle">+</div>
+                    </div>
+                    <div class="filter-content" id="hezhiFilter">
+                        <!-- 选和值 -->
+                        <div style="margin-bottom: 6px;">
+                            <div class="filter-subtitle">选和值（可多选）</div>
+                            <div class="filter-grid" id="selectSumValues">
+                                <!-- 通过JS动态生成 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 杀和值 -->
+                        <div>
+                            <div class="filter-subtitle">杀和值（可多选）</div>
+                            <div class="filter-grid" id="killSumValues">
+                                <!-- 通过JS动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 和尾选杀 -->
+                <div class="filter-group">
+                    <div class="filter-header" data-target="heweiFilter">
+                        <div class="filter-title">和尾选杀</div>
+                        <div class="filter-toggle">+</div>
+                    </div>
+                    <div class="filter-content" id="heweiFilter">
+                        <!-- 选和尾 -->
+                        <div style="margin-bottom: 6px;">
+                            <div class="filter-subtitle">选和尾（可多选）</div>
+                            <div class="filter-numbers" id="selectTailValues">
+                                <!-- 通过JS动态生成 -->
+                            </div>
+                        </div>
+                        
+                        <!-- 杀和尾 -->
+                        <div>
+                            <div class="filter-subtitle">杀和尾（可多选）</div>
+                            <div class="filter-numbers" id="killTailValues">
+                                <!-- 通过JS动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 跨度选杀 -->
+                <div class="filter-group">
+                    <div class="filter-header" data-target="kuaduFilter">
+                        <div class="filter-title">跨度选杀</div>
+                        <div class="filter-toggle">+</div>
+                    </div>
+                    <div class="filter-content" id="kuaduFilter">
+                        <!-- 选跨度 -->
+                        <div style="margin-bottom: 6px;">
+                            <div class="filter-subtitle">选跨（可多选）</div>
+                            <div class="filter-numbers" id="selectSpanValues">
+                 
