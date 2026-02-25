@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3D选码计算神器 · 优化版</title>
+    <title>3D选码计算神器 · 增强版</title>
     <style>
-        /* 样式完全保留原版，未作改动 */
+        /* 完全保留原样式，仅添加定位选杀所需样式（复用现有类） */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
         body { background-color: #f0f2f5; color: #333; line-height: 1.2; padding: 4px; min-height: 100vh; font-size: 11px; }
         .container { max-width: 100%; background-color: white; overflow: hidden; margin-bottom: 6px; }
@@ -107,6 +107,30 @@
         .btn:active { transform: scale(0.98); }
         .custom-analyze-btn { background-color: #1a73e8; color: white; border: none; padding: 8px 0; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(26, 115, 232, 0.2); width: 100%; border-radius: 4px; letter-spacing: 0.3px; }
         .custom-analyze-btn:hover, .custom-analyze-btn:active { background-color: #0d62d9; }
+
+        /* 新增定位选杀内部行布局 */
+        .position-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 6px;
+        }
+        .position-label {
+            width: 32px;
+            font-weight: 600;
+            color: #1a73e8;
+            font-size: 10px;
+        }
+        .position-digits {
+            flex: 1;
+            display: flex;
+            flex-wrap: nowrap;
+            justify-content: space-between;
+            gap: 2px;
+        }
+        .position-digits .filter-number {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
@@ -342,6 +366,56 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- ========= 新增：定位选杀（选定位/杀定位） ========= -->
+                <div class="filter-group" id="positionFilterGroup">
+                    <div class="filter-header" data-target="positionFilter">
+                        <div class="filter-title">定位选杀（百十个位独立）</div>
+                        <div class="filter-toggle">+</div>
+                    </div>
+                    <div class="filter-content" id="positionFilter">
+                        <!-- 选定位 -->
+                        <div style="margin-bottom: 12px;">
+                            <div class="filter-subtitle">选定位（必须同时包含下列所有选中的数字）</div>
+                            <!-- 百位 -->
+                            <div class="position-row">
+                                <span class="position-label">百位</span>
+                                <div class="position-digits" id="selectPosH"></div>
+                            </div>
+                            <!-- 十位 -->
+                            <div class="position-row">
+                                <span class="position-label">十位</span>
+                                <div class="position-digits" id="selectPosT"></div>
+                            </div>
+                            <!-- 个位 -->
+                            <div class="position-row">
+                                <span class="position-label">个位</span>
+                                <div class="position-digits" id="selectPosU"></div>
+                            </div>
+                        </div>
+                        <!-- 杀定位 -->
+                        <div>
+                            <div class="filter-subtitle">杀定位（号码中任何一位命中即排除）</div>
+                            <!-- 百位 -->
+                            <div class="position-row">
+                                <span class="position-label">百位</span>
+                                <div class="position-digits" id="killPosH"></div>
+                            </div>
+                            <!-- 十位 -->
+                            <div class="position-row">
+                                <span class="position-label">十位</span>
+                                <div class="position-digits" id="killPosT"></div>
+                            </div>
+                            <!-- 个位 -->
+                            <div class="position-row">
+                                <span class="position-label">个位</span>
+                                <div class="position-digits" id="killPosU"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- ========= 新增结束 ========= -->
+
                 <div class="filter-buttons">
                     <button type="button" class="filter-btn apply" id="applyFilter">筛选</button>
                     <button type="button" class="filter-btn clear" id="clearFilter">清除筛选</button>
@@ -389,6 +463,7 @@
                         <li><strong>跨度选杀</strong>：跨度=最大数-最小数，范围0-9</li>
                         <li><strong>奇偶选杀</strong>：奇=1,3,5,7,9 偶=0,2,4,6,8</li>
                         <li><strong>大小选杀</strong>：大=5,6,7,8,9 小=0,1,2,3,4</li>
+                        <li><strong>定位选杀</strong>：分别对百位、十位、个位设置选定的数字（必须同时满足）和杀掉的数字（任一命中即排除）</li>
                     </ul>
                 </li>
                 <li>每注彩票金额为2元，计算结果将显示总注数和总金额</li>
@@ -438,7 +513,10 @@
                     selectTailValues: [], killTailValues: [],
                     selectSpanValues: [], killSpanValues: [],
                     selectOddEvenPatterns: [], killOddEvenPatterns: [],
-                    selectSizePatterns: [], killSizePatterns: []
+                    selectSizePatterns: [], killSizePatterns: [],
+                    // 新增定位选杀数据结构
+                    selectPosition: { hundreds: [], tens: [], units: [] },
+                    killPosition: { hundreds: [], tens: [], units: [] }
                 };
             }
 
@@ -453,69 +531,86 @@
                 });
             }
 
-            // 根据当前选号类型的条件，更新UI上的active类
+            // 根据当前选号类型的条件，更新UI上的active类（包含新增的定位选杀）
             function applyFilterConditionsToUI() {
                 clearAllFilterActiveClasses();
                 const cond = getCurrentFilterConditions();
 
-                // 选码
+                // 原有各项
                 cond.selectNumbers.forEach(num => {
                     const el = document.querySelector(`#selectNumbers .filter-number[data-number="${num}"]`);
                     if (el) el.classList.add('active');
                 });
-                // 杀码
                 cond.killNumbers.forEach(num => {
                     const el = document.querySelector(`#killNumbers .filter-number[data-number="${num}"]`);
                     if (el) el.classList.add('active');
                 });
-                // 选和值
                 cond.selectSumValues.forEach(val => {
                     const el = document.querySelector(`#selectSumValues .filter-option[data-value="${val}"]`);
                     if (el) el.classList.add('active');
                 });
-                // 杀和值
                 cond.killSumValues.forEach(val => {
                     const el = document.querySelector(`#killSumValues .filter-option[data-value="${val}"]`);
                     if (el) el.classList.add('active');
                 });
-                // 选和尾
                 cond.selectTailValues.forEach(num => {
                     const el = document.querySelector(`#selectTailValues .filter-number[data-number="${num}"]`);
                     if (el) el.classList.add('active');
                 });
-                // 杀和尾
                 cond.killTailValues.forEach(num => {
                     const el = document.querySelector(`#killTailValues .filter-number[data-number="${num}"]`);
                     if (el) el.classList.add('active');
                 });
-                // 选跨度
                 cond.selectSpanValues.forEach(num => {
                     const el = document.querySelector(`#selectSpanValues .filter-number[data-number="${num}"]`);
                     if (el) el.classList.add('active');
                 });
-                // 杀跨度
                 cond.killSpanValues.forEach(num => {
                     const el = document.querySelector(`#killSpanValues .filter-number[data-number="${num}"]`);
                     if (el) el.classList.add('active');
                 });
-                // 选奇偶
                 cond.selectOddEvenPatterns.forEach(pat => {
                     const el = document.querySelector(`#selectOddEvenPatterns .pattern-option[data-pattern="${pat}"]`);
                     if (el) el.classList.add('active');
                 });
-                // 杀奇偶
                 cond.killOddEvenPatterns.forEach(pat => {
                     const el = document.querySelector(`#killOddEvenPatterns .pattern-option[data-pattern="${pat}"]`);
                     if (el) el.classList.add('active');
                 });
-                // 选大小
                 cond.selectSizePatterns.forEach(pat => {
                     const el = document.querySelector(`#selectSizePatterns .pattern-option[data-pattern="${pat}"]`);
                     if (el) el.classList.add('active');
                 });
-                // 杀大小
                 cond.killSizePatterns.forEach(pat => {
                     const el = document.querySelector(`#killSizePatterns .pattern-option[data-pattern="${pat}"]`);
+                    if (el) el.classList.add('active');
+                });
+
+                // 新增定位选杀
+                // 选定位
+                cond.selectPosition.hundreds.forEach(num => {
+                    const el = document.querySelector(`#selectPosH .filter-number[data-number="${num}"]`);
+                    if (el) el.classList.add('active');
+                });
+                cond.selectPosition.tens.forEach(num => {
+                    const el = document.querySelector(`#selectPosT .filter-number[data-number="${num}"]`);
+                    if (el) el.classList.add('active');
+                });
+                cond.selectPosition.units.forEach(num => {
+                    const el = document.querySelector(`#selectPosU .filter-number[data-number="${num}"]`);
+                    if (el) el.classList.add('active');
+                });
+                // 杀定位
+                cond.killPosition.hundreds.forEach(num => {
+                    const el = document.querySelector(`#killPosH .filter-number[data-number="${num}"]`);
+                    if (el) el.classList.add('active');
+                });
+                cond.killPosition.tens.forEach(num => {
+                    const el = document.querySelector(`#killPosT .filter-number[data-number="${num}"]`);
+                    if (el) el.classList.add('active');
+                });
+                cond.killPosition.units.forEach(num => {
+                    const el = document.querySelector(`#killPosU .filter-number[data-number="${num}"]`);
                     if (el) el.classList.add('active');
                 });
             }
@@ -543,12 +638,15 @@
                 for (let i = 0; i <= 9; i++) {
                     createNumberCheckbox(nonPosContainer, 'nonPositioned', i);
                 }
-                // 筛选面板
+                // 筛选面板（包括原有和新增的定位选杀）
                 initFilterNumbers();
                 // 折叠面板
                 initAccordions();
                 // 默认显示不定位，并加载其筛选条件（刚初始化为空，所以UI无active）
                 showNonPositionedSelection();
+
+                // 新增：定位选杀面板在定位选号模式下隐藏，其他模式显示（初始是不定位，所以显示）
+                // 切换时在show函数中处理
             }
 
             function createNumberCheckbox(container, position, number) {
@@ -579,8 +677,9 @@
                 });
             }
 
+            // 初始化所有筛选按钮（原有+新增定位选杀）
             function initFilterNumbers() {
-                // 选码/杀码 0-9
+                // 原有：选码/杀码 0-9
                 for (let i = 0; i <= 9; i++) {
                     createFilterNumber('selectNumbers', i, 'select');
                     createFilterNumber('killNumbers', i, 'kill');
@@ -600,8 +699,21 @@
                 // 大小
                 sizePatterns.forEach(p => createPatternOption('selectSizePatterns', p, 'select'));
                 sizePatterns.forEach(p => createPatternOption('killSizePatterns', p, 'kill'));
+
+                // ===== 新增：定位选杀按钮 =====
+                // 选定位 百十个位
+                for (let i = 0; i <= 9; i++) {
+                    createPositionNumber('selectPosH', i, 'select', 'hundreds');
+                    createPositionNumber('selectPosT', i, 'select', 'tens');
+                    createPositionNumber('selectPosU', i, 'select', 'units');
+                    // 杀定位
+                    createPositionNumber('killPosH', i, 'kill', 'hundreds');
+                    createPositionNumber('killPosT', i, 'kill', 'tens');
+                    createPositionNumber('killPosU', i, 'kill', 'units');
+                }
             }
 
+            // 通用筛选数字（原有）
             function createFilterNumber(containerId, number, type) {
                 const container = document.getElementById(containerId);
                 if (!container) return;
@@ -615,7 +727,6 @@
                 div.addEventListener('click', function() {
                     const num = parseInt(this.dataset.number);
                     const t = this.dataset.type;
-                    // 根据父容器ID确定键名
                     const parentId = this.parentElement.id;
                     let key = '';
                     if (parentId.includes('select')) {
@@ -636,6 +747,44 @@
                         this.classList.add('active');
                     } else {
                         cond[key].splice(idx, 1);
+                        this.classList.remove('active');
+                    }
+                });
+            }
+
+            // 新增：定位选杀专用按钮创建
+            function createPositionNumber(containerId, number, type, position) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                const div = document.createElement('div');
+                div.className = `filter-number ${type}`;  // 复用样式，type用于颜色
+                div.textContent = number;
+                div.dataset.number = number;
+                div.dataset.type = type;
+                div.dataset.position = position;  // 记录位置
+                container.appendChild(div);
+
+                div.addEventListener('click', function() {
+                    const num = parseInt(this.dataset.number);
+                    const t = this.dataset.type;       // 'select' 或 'kill'
+                    const pos = this.dataset.position; // 'hundreds','tens','units'
+                    const parentId = this.parentElement.id; // 例如 selectPosH, killPosT 等
+
+                    const cond = getCurrentFilterConditions();
+                    // 确定要操作的数组
+                    let targetArray;
+                    if (t === 'select') {
+                        targetArray = cond.selectPosition[pos];
+                    } else {
+                        targetArray = cond.killPosition[pos];
+                    }
+
+                    const idx = targetArray.indexOf(num);
+                    if (idx === -1) {
+                        targetArray.push(num);
+                        this.classList.add('active');
+                    } else {
+                        targetArray.splice(idx, 1);
                         this.classList.remove('active');
                     }
                 });
@@ -733,6 +882,9 @@
                 selectedNumbers.units = [];
                 document.querySelectorAll('#hundreds input, #tens input, #units input').forEach(cb => cb.checked = false);
 
+                // 定位选号模式下，隐藏“定位选杀”面板（因为本身已定位，再定位筛选意义不大，也可保留但根据要求隐藏）
+                document.getElementById('positionFilterGroup').style.display = 'none';
+
                 // 加载当前类型对应的筛选条件到UI
                 applyFilterConditionsToUI();
                 clearResults();
@@ -752,6 +904,9 @@
                 selectedNumbers.nonPositioned = [];
                 document.querySelectorAll('#nonPositionedNumbers input').forEach(cb => cb.checked = false);
 
+                // 显示定位选杀面板
+                document.getElementById('positionFilterGroup').style.display = 'block';
+
                 applyFilterConditionsToUI();
                 clearResults();
             }
@@ -768,6 +923,9 @@
                 document.getElementById('customOption').classList.add('active');
 
                 document.getElementById('customNumbers').value = '';
+
+                // 显示定位选杀面板
+                document.getElementById('positionFilterGroup').style.display = 'block';
 
                 applyFilterConditionsToUI();
                 clearResults();
@@ -794,7 +952,7 @@
                 document.getElementById('errorMessage').style.display = 'none';
             }
 
-            // 计算和尾、跨度、模式等（函数与原版一致）
+            // 计算和尾、跨度、模式等
             function calculateTail(num) { return num.split('').map(Number).reduce((a,b)=>a+b,0) % 10; }
             function calculateSpan(num) { const d=num.split('').map(Number); return Math.max(...d)-Math.min(...d); }
             function getOddEvenPattern(num) { return num.split('').map(d => d%2?'奇':'偶').join(''); }
@@ -805,7 +963,7 @@
                 const inc3 = document.getElementById('group3').checked;
                 const inc6 = document.getElementById('group6').checked;
                 const incL = document.getElementById('leopard').checked;
-                if (!inc3 && !inc6 && !incL) return; // 全不过滤
+                if (!inc3 && !inc6 && !incL) return;
                 results = results.filter(num => {
                     const d = num.split('').map(Number);
                     const isL = d[0]===d[1] && d[1]===d[2];
@@ -838,7 +996,7 @@
                 }
             }
 
-            // 筛选逻辑（与原版一致）
+            // 原有筛选函数
             function passNumberFilter(num, cond) {
                 const d = num.split('').map(Number);
                 if (cond.selectNumbers.length) {
@@ -882,20 +1040,60 @@
                 return true;
             }
 
+            // 新增定位选杀筛选
+            function passPositionFilter(num, cond) {
+                const d = num.split('').map(Number); // [百,十,个]
+                // 选定位：必须同时满足每位都在选中的数字中（如果某位有选择）
+                const sel = cond.selectPosition;
+                if (sel.hundreds.length > 0 && !sel.hundreds.includes(d[0])) return false;
+                if (sel.tens.length > 0 && !sel.tens.includes(d[1])) return false;
+                if (sel.units.length > 0 && !sel.units.includes(d[2])) return false;
+
+                // 杀定位：只要有一位命中杀码就排除
+                const kill = cond.killPosition;
+                if (kill.hundreds.length > 0 && kill.hundreds.includes(d[0])) return false;
+                if (kill.tens.length > 0 && kill.tens.includes(d[1])) return false;
+                if (kill.units.length > 0 && kill.units.includes(d[2])) return false;
+
+                return true;
+            }
+
             function applyFilters() {
                 const cond = getCurrentFilterConditions();
-                const hasFilters = Object.values(cond).some(arr => arr.length > 0);
+                // 检查是否有任何筛选条件（包括新增的定位选杀）
+                const hasFilters = 
+                    cond.selectNumbers.length > 0 ||
+                    cond.killNumbers.length > 0 ||
+                    cond.selectSumValues.length > 0 ||
+                    cond.killSumValues.length > 0 ||
+                    cond.selectTailValues.length > 0 ||
+                    cond.killTailValues.length > 0 ||
+                    cond.selectSpanValues.length > 0 ||
+                    cond.killSpanValues.length > 0 ||
+                    cond.selectOddEvenPatterns.length > 0 ||
+                    cond.killOddEvenPatterns.length > 0 ||
+                    cond.selectSizePatterns.length > 0 ||
+                    cond.killSizePatterns.length > 0 ||
+                    cond.selectPosition.hundreds.length > 0 ||
+                    cond.selectPosition.tens.length > 0 ||
+                    cond.selectPosition.units.length > 0 ||
+                    cond.killPosition.hundreds.length > 0 ||
+                    cond.killPosition.tens.length > 0 ||
+                    cond.killPosition.units.length > 0;
+
                 if (!hasFilters) {
                     filteredResults = [...results];
                     return;
                 }
+
                 filteredResults = results.filter(num => 
                     passNumberFilter(num, cond) &&
                     passSumFilter(num, cond) &&
                     passTailFilter(num, cond) &&
                     passSpanFilter(num, cond) &&
                     passOddEvenFilter(num, cond) &&
-                    passSizeFilter(num, cond)
+                    passSizeFilter(num, cond) &&
+                    passPositionFilter(num, cond)  // 新增定位筛选
                 );
             }
 
