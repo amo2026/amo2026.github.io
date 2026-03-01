@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>K线模拟训练 · 手机版 (50根K线)</title>
+    <title>K线模拟训练 · 手机版 (稳定代理)</title>
     <!-- ECharts 5 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <!-- Font Awesome -->
@@ -273,7 +273,7 @@
     </div>
 
     <div class="footer-note">
-        ⚡ 默认请求50根K线 · 通过 corsproxy.io 代理请求 OKX 永续合约数据
+        ⚡ 默认请求50根K线 · 使用 allorigins 代理获取 OKX 永续合约数据
     </div>
 </div>
 
@@ -500,7 +500,7 @@
         chart.setOption(option);
     }
 
-    // --- 获取K线数据 (通过CORS代理) ---
+    // --- 获取K线数据 (使用 allorigins 代理) ---
     async function fetchKlines() {
         const instId = instIdSelect.value;
         const bar = barSelect.value;
@@ -509,8 +509,10 @@
         fetchBtn.disabled = true;
         addLog(`请求 ${instId} ${bar} ${limit}根...`);
 
+        // 原始 OKX API URL
         const originalUrl = `https://www.okx.com/api/v5/market/candles?instId=${instId}&bar=${bar}&limit=${limit}`;
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(originalUrl)}`;
+        // 使用 allorigins 代理 (稳定，支持 JSON)
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(originalUrl)}`;
 
         try {
             const resp = await fetch(proxyUrl);
