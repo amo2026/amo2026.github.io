@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>逐根K线模拟训练 · 同花顺风格</title>
+    <title>K线模拟训练 · 分页获取版</title>
     <!-- ECharts 5 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <!-- Font Awesome -->
@@ -13,7 +13,7 @@
         body {
             background: #0d0e17;
             font-family: 'Segoe UI', Roboto, sans-serif;
-            padding: 12px;
+            padding: 10px;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -23,61 +23,60 @@
             max-width: 480px;
             width: 100%;
             background: #1e1f2b;
-            border-radius: 28px;
+            border-radius: 24px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.7);
             overflow: hidden;
-            padding: 18px 14px;
+            padding: 16px 12px;
             color: #f0f3fa;
         }
         .control-bar {
             background: #2a2c3b;
-            border-radius: 20px;
-            padding: 16px 14px;
-            margin-bottom: 16px;
+            border-radius: 18px;
+            padding: 14px 12px;
+            margin-bottom: 14px;
         }
         .row {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .row:last-child { margin-bottom: 0; }
         .select-group {
-            flex: 1 1 120px;
+            flex: 1 1 100px;
             display: flex;
             flex-direction: column;
         }
         .select-group label {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: #9aa5c0;
             margin-bottom: 2px;
         }
         .select-group select, .select-group input {
             background: #1b1d29;
             border: 1px solid #3a3e55;
-            border-radius: 30px;
-            padding: 10px 14px;
+            border-radius: 24px;
+            padding: 8px 12px;
             color: white;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             outline: none;
         }
         .btn {
             background: #3f435b;
             border: none;
             color: white;
-            padding: 12px 18px;
-            border-radius: 40px;
+            padding: 8px 14px;
+            border-radius: 30px;
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 5px;
             cursor: pointer;
             transition: 0.2s;
             border: 1px solid #555b77;
-            flex: 1 1 auto;
         }
         .btn-primary { background: #5d68e4; border-color: #7a85ff; }
         .btn-primary:active { background: #4a55c4; }
@@ -87,115 +86,101 @@
         .btn:active { transform: scale(0.96); }
         .btn:disabled { opacity: 0.4; pointer-events: none; }
 
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 16px 0 8px;
+        }
+        .button-grid .btn {
+            padding: 14px 0;
+            font-size: 1rem;
+        }
+
         .chart-card {
             background: #1b1d29;
-            border-radius: 24px;
-            padding: 12px;
-            margin-bottom: 16px;
-        }
-        #klineChart { width: 100%; height: 320px; }
-
-        .price-grid {
-            background: #1b1d29;
             border-radius: 20px;
-            padding: 16px 12px;
-            margin-bottom: 16px;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px 8px;
+            padding: 10px;
+            margin-bottom: 14px;
         }
-        .price-item {
+        #klineChart { width: 100%; height: 280px; }
+
+        .info-panel {
+            background: #1b1d29;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            font-size: 0.9rem;
+        }
+        .info-item {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
+            min-width: 60px;
         }
-        .price-label {
-            font-size: 0.65rem;
+        .info-label {
+            font-size: 0.6rem;
             color: #8f9bb3;
-            text-transform: uppercase;
         }
-        .price-value {
-            font-size: 1.1rem;
+        .info-value {
             font-weight: 700;
-            line-height: 1.3;
         }
         .change-positive { color: #2ecc71; }
         .change-negative { color: #e74c3c; }
 
-        .account-card {
-            background: #1b1d29;
-            border-radius: 20px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-        .account-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #2f3242;
-        }
-        .account-row:last-child { border-bottom: none; }
-        .account-label { color: #9aa5c0; }
-        .account-value { font-weight: 600; }
-        .position-detail {
+        .position-badge {
             background: #0f111c;
-            border-radius: 16px;
-            padding: 12px;
-            margin-top: 12px;
-            font-size: 0.9rem;
+            border-radius: 30px;
+            padding: 6px 14px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85rem;
         }
+        .position-badge span { color: #b7c0d4; }
 
-        .action-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin: 16px 0;
-        }
-        .action-grid .btn {
-            padding: 18px 0;
-            font-size: 1.2rem;
-            border-radius: 50px;
-        }
-
-        .ops-indicator {
+        .ops-left {
             background: #2a2c3b;
-            border-radius: 40px;
-            padding: 14px;
+            border-radius: 30px;
+            padding: 10px;
             text-align: center;
-            font-size: 1.2rem;
+            font-size: 1rem;
             margin: 8px 0;
         }
-        .ops-indicator span {
+        .ops-left span {
             font-weight: 800;
             color: #5d68e4;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
         }
 
         .log-box {
             background: #11131f;
-            border-radius: 18px;
-            padding: 12px 16px;
-            max-height: 120px;
+            border-radius: 16px;
+            padding: 10px 14px;
+            max-height: 100px;
             overflow-y: auto;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #b7c0d4;
-            margin-top: 12px;
         }
         .log-entry {
-            padding: 4px 0;
+            padding: 3px 0;
             border-bottom: 1px dashed #2d3142;
         }
         .footer-note {
             text-align: center;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: #5f6a87;
-            margin-top: 16px;
+            margin-top: 12px;
         }
         .kline-index {
             text-align: center;
-            margin-top: 8px;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: #8f9bb3;
+            margin-top: 5px;
         }
     </style>
 </head>
@@ -226,63 +211,61 @@
         </div>
         <div class="row">
             <div class="select-group" style="flex:2;">
-                <label>根数 (训练次数)</label>
-                <input type="number" id="limit" min="5" max="200" value="50">
+                <label>根数 (可超过100)</label>
+                <input type="number" id="limit" min="5" max="300" value="50">
             </div>
-            <button class="btn btn-primary" id="fetchBtn" style="flex:1;"><i class="fas fa-sync-alt"></i> 开始训练</button>
+            <button class="btn btn-primary" id="fetchBtn" style="flex:1;"><i class="fas fa-sync-alt"></i> 开始</button>
         </div>
     </div>
 
-    <!-- 图表 (只显示到当前K线) -->
+    <!-- K线图 -->
     <div class="chart-card">
         <div id="klineChart"></div>
         <div class="kline-index" id="klineIndex">第 1 / 50 根</div>
     </div>
 
-    <!-- 价格网格 (当前K线) -->
-    <div class="price-grid" id="priceGrid">
-        <div class="price-item"><span class="price-label">最新</span><span class="price-value" id="lastPrice">--</span></div>
-        <div class="price-item"><span class="price-label">开</span><span class="price-value" id="openPrice">--</span></div>
-        <div class="price-item"><span class="price-label">高</span><span class="price-value" id="highPrice">--</span></div>
-        <div class="price-item"><span class="price-label">低</span><span class="price-value" id="lowPrice">--</span></div>
-        <div class="price-item"><span class="price-label">涨跌额</span><span class="price-value" id="changeVal">--</span></div>
-        <div class="price-item"><span class="price-label">涨跌幅</span><span class="price-value" id="changePercent">--</span></div>
-        <div class="price-item"><span class="price-label">成交量</span><span class="price-value" id="volume">--</span></div>
-        <div class="price-item"><span class="price-label">持仓</span><span class="price-value" id="positionSimple">无</span></div>
+    <!-- 简洁信息栏 -->
+    <div class="info-panel">
+        <div class="info-item"><span class="info-label">开</span><span class="info-value" id="openPrice">--</span></div>
+        <div class="info-item"><span class="info-label">高</span><span class="info-value" id="highPrice">--</span></div>
+        <div class="info-item"><span class="info-label">低</span><span class="info-value" id="lowPrice">--</span></div>
+        <div class="info-item"><span class="info-label">收</span><span class="info-value" id="closePrice">--</span></div>
+        <div class="info-item"><span class="info-label">涨跌</span><span class="info-value" id="changePercent">--</span></div>
     </div>
 
-    <!-- 账户卡片 -->
-    <div class="account-card">
-        <div class="account-row"><span class="account-label">余额</span><span class="account-value" id="balance">10,000.00</span></div>
-        <div class="account-row"><span class="account-label">浮动盈亏</span><span class="account-value" id="floatingPL">0.00</span></div>
-        <div class="account-row"><span class="account-label">收益率</span><span class="account-value" id="roi">0.00%</span></div>
-        <div id="positionDetail" class="position-detail" style="display: none;">
-            <div><i class="fas fa-info-circle"></i> 开仓价: <span id="openPricePos">--</span></div>
-            <div><i class="fas fa-arrow-up" style="color:#2ecc71;"></i> 方向: <span id="positionDir">--</span></div>
-            <div><i class="fas fa-clock"></i> 开仓K线: <span id="openKlineIndex">--</span></div>
-        </div>
+    <!-- 账户简洁 -->
+    <div class="info-panel">
+        <div class="info-item"><span class="info-label">余额</span><span class="info-value" id="balance">10,000</span></div>
+        <div class="info-item"><span class="info-label">浮动</span><span class="info-value" id="floatingPL">0</span></div>
+        <div class="info-item"><span class="info-label">收益率</span><span class="info-value" id="roi">0%</span></div>
     </div>
 
-    <!-- 大按钮 2x2 -->
-    <div class="action-grid">
-        <button class="btn btn-success" id="buyBtn"><i class="fas fa-arrow-up"></i> 买入</button>
-        <button class="btn btn-danger" id="sellBtn"><i class="fas fa-arrow-down"></i> 卖出</button>
+    <!-- 当前持仓显示 -->
+    <div class="position-badge" id="positionBadge" style="display: none;">
+        <span><i class="fas fa-arrow-up" style="color:#2ecc71;"></i> 持仓: <span id="posDir">多</span> @ <span id="posPrice">0</span></span>
+        <span>开仓K线: <span id="posIndex">0</span></span>
+    </div>
+
+    <!-- 四个主要按钮（已修改文字） -->
+    <div class="button-grid">
+        <button class="btn btn-success" id="buyBtn"><i class="fas fa-arrow-up"></i> 买入（多）</button>
+        <button class="btn btn-danger" id="sellBtn"><i class="fas fa-arrow-down"></i> 卖出（空）</button>
         <button class="btn btn-warning" id="watchBtn"><i class="fas fa-eye"></i> 观望</button>
-        <button class="btn btn-primary" id="settleBtn"><i class="fas fa-hand-holding-usd"></i> 结算</button>
+        <button class="btn btn-primary" id="settleBtn"><i class="fas fa-hand-holding-usd"></i> 平仓</button>
     </div>
 
-    <!-- 剩余操作次数 (剩余K线数) -->
-    <div class="ops-indicator">
-        <i class="fas fa-bolt"></i> 剩余 <span id="opsLeft">50</span>/50 次
+    <!-- 剩余操作次数 -->
+    <div class="ops-left">
+        <i class="fas fa-bolt"></i> 剩余 <span id="opsLeft">50</span> 次
     </div>
 
-    <!-- 操作日志 -->
+    <!-- 日志 -->
     <div class="log-box" id="logPanel">
-        <div class="log-entry">⏳ 点击"开始训练"加载数据</div>
+        <div class="log-entry">⏳ 点击"开始"加载数据</div>
     </div>
 
     <div class="footer-note">
-        ⚡ 逐根K线模拟 · 买入/卖出/观望消耗一次机会并前进到下一根 · 结算不前进
+        ⚡ 买入=开多，卖出=开空，平仓=平当前仓 · 自动分页获取，可请求最多300根
     </div>
 </div>
 
@@ -298,24 +281,21 @@
     const watchBtn = document.getElementById('watchBtn');
     const settleBtn = document.getElementById('settleBtn');
 
-    const lastPriceSpan = document.getElementById('lastPrice');
     const openPriceSpan = document.getElementById('openPrice');
     const highPriceSpan = document.getElementById('highPrice');
     const lowPriceSpan = document.getElementById('lowPrice');
-    const changeValSpan = document.getElementById('changeVal');
+    const closePriceSpan = document.getElementById('closePrice');
     const changePercentSpan = document.getElementById('changePercent');
-    const volumeSpan = document.getElementById('volume');
-    const positionSimpleSpan = document.getElementById('positionSimple');
     const balanceSpan = document.getElementById('balance');
     const floatingPlSpan = document.getElementById('floatingPL');
     const roiSpan = document.getElementById('roi');
     const opsLeftSpan = document.getElementById('opsLeft');
-    const positionDetailDiv = document.getElementById('positionDetail');
-    const openPricePosSpan = document.getElementById('openPricePos');
-    const positionDirSpan = document.getElementById('positionDir');
-    const openKlineIndexSpan = document.getElementById('openKlineIndex');
     const klineIndexDiv = document.getElementById('klineIndex');
     const logPanel = document.getElementById('logPanel');
+    const positionBadge = document.getElementById('positionBadge');
+    const posDirSpan = document.getElementById('posDir');
+    const posPriceSpan = document.getElementById('posPrice');
+    const posIndexSpan = document.getElementById('posIndex');
 
     // --- 全局变量 ---
     let chart = null;
@@ -326,7 +306,11 @@
         balance: 10000,
         position: null,               // { direction: 'long'/'short', openPrice: number, openIndex: number }
     };
-    let totalKlines = 0;              // 总K线数量
+    let totalKlines = 0;
+
+    // 记录买卖点标记数据
+    let buyMarks = [];   // 开多点 { coord: [index, price] }
+    let sellMarks = [];  // 开空点
 
     // --- 工具函数 ---
     function addLog(msg, isSuccess = true) {
@@ -334,7 +318,7 @@
         entry.className = 'log-entry';
         entry.innerHTML = `${isSuccess ? '✅' : '❌'} ${msg}`;
         logPanel.appendChild(entry);
-        if (logPanel.children.length > 6) {
+        if (logPanel.children.length > 5) {
             logPanel.removeChild(logPanel.children[0]);
         }
         logPanel.scrollTop = logPanel.scrollHeight;
@@ -344,10 +328,10 @@
         return parseFloat(val).toFixed(digits);
     }
     function formatMoney(val) {
-        return parseFloat(val).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parseFloat(val).toFixed(2);
     }
 
-    // 更新UI：价格面板、账户信息、剩余次数
+    // 更新UI
     function refreshUI() {
         if (!allKlines.length || currentIndex >= allKlines.length) return;
 
@@ -356,36 +340,24 @@
         const h = parseFloat(k[2]);
         const l = parseFloat(k[3]);
         const c = parseFloat(k[4]);
-        const vol = parseFloat(k[5]);
 
-        // 涨跌幅 (与上一根比较，如果存在)
-        let changeVal = 0, changePercent = 0;
+        // 涨跌幅 (与上一根比较)
+        let changePercent = 0;
         if (currentIndex > 0) {
             const prevClose = parseFloat(allKlines[currentIndex-1][4]);
-            changeVal = c - prevClose;
-            changePercent = (changeVal / prevClose) * 100;
+            changePercent = ((c - prevClose) / prevClose) * 100;
         }
 
-        lastPriceSpan.innerText = formatPrice(c, 4);
-        openPriceSpan.innerText = formatPrice(o, 4);
-        highPriceSpan.innerText = formatPrice(h, 4);
-        lowPriceSpan.innerText = formatPrice(l, 4);
-        changeValSpan.innerText = (changeVal > 0 ? '+' : '') + formatPrice(changeVal, 4);
-        changeValSpan.className = changeVal >= 0 ? 'price-value change-positive' : 'price-value change-negative';
+        openPriceSpan.innerText = formatPrice(o, 2);
+        highPriceSpan.innerText = formatPrice(h, 2);
+        lowPriceSpan.innerText = formatPrice(l, 2);
+        closePriceSpan.innerText = formatPrice(c, 2);
         changePercentSpan.innerText = (changePercent > 0 ? '+' : '') + changePercent.toFixed(2) + '%';
-        changePercentSpan.className = changePercent >= 0 ? 'price-value change-positive' : 'price-value change-negative';
-        volumeSpan.innerText = vol.toFixed(0);
+        changePercentSpan.className = changePercent >= 0 ? 'info-value change-positive' : 'info-value change-negative';
 
-        // 持仓简写
-        if (account.position) {
-            positionSimpleSpan.innerText = account.position.direction === 'long' ? '多' : '空';
-        } else {
-            positionSimpleSpan.innerText = '无';
-        }
+        balanceSpan.innerText = formatMoney(account.balance);
 
-        balanceSpan.innerText = formatMoney(account.balance) + ' USDT';
-
-        // 浮动盈亏 = 当前价格相对于开仓价的方向差
+        // 浮动盈亏
         let floatingPL = 0;
         if (account.position) {
             const openPrice = account.position.openPrice;
@@ -394,45 +366,47 @@
             } else {
                 floatingPL = openPrice - c;
             }
-            positionDetailDiv.style.display = 'block';
-            openPricePosSpan.innerText = formatPrice(openPrice, 4);
-            positionDirSpan.innerText = account.position.direction === 'long' ? '多头' : '空头';
-            openKlineIndexSpan.innerText = (account.position.openIndex + 1) + '/' + totalKlines;
+            // 显示持仓徽章
+            positionBadge.style.display = 'flex';
+            posDirSpan.innerText = account.position.direction === 'long' ? '多' : '空';
+            posPriceSpan.innerText = formatPrice(openPrice, 2);
+            posIndexSpan.innerText = account.position.openIndex + 1;
         } else {
             floatingPL = 0;
-            positionDetailDiv.style.display = 'none';
+            positionBadge.style.display = 'none';
         }
-        floatingPlSpan.innerText = (floatingPL >= 0 ? '+' : '') + floatingPL.toFixed(2) + ' USDT';
-        floatingPlSpan.className = floatingPL >= 0 ? 'account-value change-positive' : 'account-value change-negative';
+        floatingPlSpan.innerText = (floatingPL >= 0 ? '+' : '') + floatingPL.toFixed(2);
+        floatingPlSpan.className = floatingPL >= 0 ? 'info-value change-positive' : 'info-value change-negative';
 
         const equity = account.balance + floatingPL;
         const roi = ((equity - account.initBalance) / account.initBalance) * 100;
         roiSpan.innerText = roi.toFixed(2) + '%';
-        roiSpan.className = roi >= 0 ? 'account-value change-positive' : 'account-value change-negative';
+        roiSpan.className = roi >= 0 ? 'info-value change-positive' : 'info-value change-negative';
 
-        // 剩余操作次数 = 剩余可前进的K线数（包括当前？当前还未操作，但当前K线可以进行操作）
-        // 我们定义：剩余操作次数 = totalKlines - currentIndex （因为当前K线可以操作一次）
+        // 剩余次数 = 总K线数 - currentIndex
         const opsLeft = totalKlines - currentIndex;
         opsLeftSpan.innerText = opsLeft;
 
-        // 显示当前K线索引
         klineIndexDiv.innerText = `第 ${currentIndex+1} / ${totalKlines} 根`;
 
-        // 根据剩余次数和索引启用/禁用按钮
-        const canAdvance = currentIndex < totalKlines - 1; // 还有下一根才能前进
+        // 按钮状态
+        const canAdvance = currentIndex < totalKlines - 1; // 还有下一根才能前进（开仓/观望需要前进）
         const hasPosition = account.position !== null;
 
-        buyBtn.disabled = !canAdvance || hasPosition;      // 有持仓不能开新仓
+        // 买入/卖出开仓：只能在没有持仓并且还有下一根时使用
+        buyBtn.disabled = !canAdvance || hasPosition;
         sellBtn.disabled = !canAdvance || hasPosition;
-        watchBtn.disabled = !canAdvance;                    // 观望也需要有下一根
-        settleBtn.disabled = !hasPosition;                  // 没持仓不能结算
+        // 观望：只要还有下一根
+        watchBtn.disabled = !canAdvance;
+        // 平仓：只要有持仓
+        settleBtn.disabled = !hasPosition;
     }
 
-    // --- 渲染图表 (从第0根到当前索引) ---
+    // 渲染图表（包含买卖标记）
     function renderChart() {
         if (!chart || !allKlines.length) return;
 
-        const sliced = allKlines.slice(0, currentIndex + 1); // 从旧到新
+        const sliced = allKlines.slice(0, currentIndex + 1);
         const dates = sliced.map(item => {
             const d = new Date(parseInt(item[0]));
             return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
@@ -440,124 +414,150 @@
         const kValues = sliced.map(item => [
             parseFloat(item[1]), parseFloat(item[4]), parseFloat(item[3]), parseFloat(item[2])
         ]);
-        const volumes = sliced.map(item => parseFloat(item[5]));
-        // MACD计算需要收盘价序列
-        const closes = sliced.map(item => parseFloat(item[4]));
-        // 简单MACD计算 (复用之前的函数)
-        const { dif, dea, macd } = calculateMACD(closes);
+
+        // 准备标记点数据
+        const markPointData = [];
+        buyMarks.forEach(m => {
+            if (m.coord[0] <= currentIndex) {
+                markPointData.push({
+                    coord: [m.coord[0], m.coord[1]],
+                    name: 'B',
+                    symbol: 'arrow',
+                    symbolSize: 20,
+                    symbolRotate: 0,
+                    itemStyle: { color: '#2ecc71' }
+                });
+            }
+        });
+        sellMarks.forEach(m => {
+            if (m.coord[0] <= currentIndex) {
+                markPointData.push({
+                    coord: [m.coord[0], m.coord[1]],
+                    name: 'S',
+                    symbol: 'arrow',
+                    symbolSize: 20,
+                    symbolRotate: 180,
+                    itemStyle: { color: '#e74c3c' }
+                });
+            }
+        });
 
         const option = {
             backgroundColor: '#1b1d29',
             animation: false,
             tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
-            legend: { show: false },
-            grid: [
-                { left: '3%', right: '3%', top: '8%', height: '52%' },
-                { left: '3%', right: '3%', top: '68%', height: '14%' },
-                { left: '3%', right: '3%', top: '84%', height: '14%' }
-            ],
-            xAxis: [
-                { type: 'category', data: dates, gridIndex: 0, axisLabel: { rotate: 30, color: '#aaa', fontSize: 8 } },
-                { type: 'category', data: dates, gridIndex: 1, axisLabel: { show: false } },
-                { type: 'category', data: dates, gridIndex: 2, axisLabel: { show: false } }
-            ],
-            yAxis: [
-                { gridIndex: 0, scale: true, axisLabel: { color: '#aaa', fontSize: 8 } },
-                { gridIndex: 1, axisLabel: { color: '#aaa', fontSize: 8 } },
-                { gridIndex: 2, axisLabel: { color: '#aaa', fontSize: 8 } }
-            ],
-            series: [
-                {
-                    name: 'K线', type: 'candlestick', data: kValues,
-                    xAxisIndex: 0, yAxisIndex: 0,
-                    itemStyle: {
-                        color: '#2ecc71', color0: '#e74c3c',
-                        borderColor: '#2ecc71', borderColor0: '#e74c3c'
-                    }
+            xAxis: {
+                type: 'category',
+                data: dates,
+                axisLabel: { rotate: 30, color: '#aaa', fontSize: 8 }
+            },
+            yAxis: {
+                scale: true,
+                axisLabel: { color: '#aaa', fontSize: 8 }
+            },
+            series: [{
+                name: 'K线',
+                type: 'candlestick',
+                data: kValues,
+                itemStyle: {
+                    color: '#2ecc71',
+                    color0: '#e74c3c',
+                    borderColor: '#2ecc71',
+                    borderColor0: '#e74c3c'
                 },
-                {
-                    name: '成交量', type: 'bar', data: volumes,
-                    xAxisIndex: 1, yAxisIndex: 1, itemStyle: { color: '#5d68e4' }
-                },
-                {
-                    name: 'DIF', type: 'line', data: dif,
-                    xAxisIndex: 2, yAxisIndex: 2, lineStyle: { color: '#f1c40f', width: 1 }, showSymbol: false
-                },
-                {
-                    name: 'DEA', type: 'line', data: dea,
-                    xAxisIndex: 2, yAxisIndex: 2, lineStyle: { color: '#3498db', width: 1 }, showSymbol: false
-                },
-                {
-                    name: 'MACD', type: 'bar', data: macd,
-                    xAxisIndex: 2, yAxisIndex: 2,
-                    itemStyle: { color: (params) => params.data >= 0 ? '#e74c3c' : '#2ecc71' }
+                markPoint: {
+                    data: markPointData,
+                    symbol: 'arrow',
+                    symbolSize: 20,
+                    label: { show: false }
                 }
-            ]
+            }]
         };
         chart.setOption(option);
     }
 
-    // --- MACD 计算 (与之前相同) ---
-    function calculateMACD(closePrices, short = 12, long = 26, signal = 9) {
-        const dif = [], dea = [], macd = [];
-        if (closePrices.length < long) return { dif, dea, macd };
-        let emaShort = closePrices[0], emaLong = closePrices[0];
-        for (let i = 0; i < closePrices.length; i++) {
-            if (i === 0) {
-                emaShort = closePrices[0];
-                emaLong = closePrices[0];
-            } else {
-                emaShort = closePrices[i] * 2 / (short + 1) + emaShort * (1 - 2/(short+1));
-                emaLong = closePrices[i] * 2 / (long + 1) + emaLong * (1 - 2/(long+1));
+    // --- 分页获取K线数据 ---
+    async function fetchAllKlines(instId, bar, totalLimit) {
+        const batchSize = 50; // 每次请求50根
+        let allData = [];
+        let before = null;     // 用于分页的参数（获取更早的数据）
+        let remaining = totalLimit;
+
+        addLog(`开始分页获取，目标 ${totalLimit} 根...`);
+
+        while (remaining > 0) {
+            const limit = Math.min(batchSize, remaining);
+            let url = `https://www.okx.com/api/v5/market/candles?instId=${instId}&bar=${bar}&limit=${limit}`;
+            if (before) {
+                url += `&before=${before}`; // 获取 before 时间戳之前的数据
             }
-            if (i >= long - 1) {
-                dif[i] = emaShort - emaLong;
-            } else {
-                dif[i] = 0;
-            }
-        }
-        let deaPrev = dif[long-1];
-        for (let i = 0; i < closePrices.length; i++) {
-            if (i < long-1) {
-                dea[i] = 0;
-                macd[i] = 0;
-            } else {
-                if (i === long-1) {
-                    dea[i] = dif[i];
-                } else {
-                    dea[i] = dif[i] * 2/(signal+1) + deaPrev * (1 - 2/(signal+1));
-                    deaPrev = dea[i];
+
+            // 使用代理
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+
+            try {
+                const resp = await fetch(proxyUrl);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const json = await resp.json();
+                if (json.code !== '0') throw new Error(json.msg);
+
+                const batch = json.data; // 最新在前
+                if (!batch || batch.length === 0) break; // 无更多数据
+
+                // 将这一批数据追加到 allData（注意顺序，我们最终要正序）
+                // 当前 batch 是最新在前，我们需要的是从旧到新，所以先反转再合并？
+                // 由于我们是从最新开始往前取，每次取到的 batch 都是越来越早的。
+                // 最终 allData 顺序应该是从旧到新，所以我们应该将新获取的 batch（更早的数据）放在前面。
+                // 简便方法：先收集所有批次，最后统一反转。
+                allData = allData.concat(batch);
+
+                // 设置下一次的 before 为这一批最旧的一条的时间戳（即 batch 最后一条）
+                if (batch.length > 0) {
+                    before = batch[batch.length - 1][0]; // 取最早的那条的时间戳
                 }
-                macd[i] = (dif[i] - dea[i]) * 2;
+
+                remaining -= batch.length;
+                addLog(`已获取 ${allData.length} 根...`);
+
+                // 如果返回的数量少于请求的 limit，说明没有更多数据了
+                if (batch.length < limit) break;
+            } catch (e) {
+                addLog(`分页请求失败: ${e.message}`, false);
+                throw e; // 终止
             }
         }
-        return { dif, dea, macd };
+
+        // 合并后的 allData 顺序：最早的在最后（因为我们每次 concat 是把更早的放在后面）
+        // 例如第一次请求到最近50根，第二次请求到前50根，allData = [最近50根, 前50根]（按请求顺序）
+        // 我们需要的是从旧到新，所以反转整个数组
+        const reversed = allData.reverse(); // 现在是从旧到新
+        return reversed;
     }
 
-    // --- 获取K线数据 (使用代理) ---
+    // 获取数据入口
     async function fetchKlines() {
         const instId = instIdSelect.value;
         const bar = barSelect.value;
-        const limit = parseInt(limitInput.value) || 50;
+        const totalLimit = parseInt(limitInput.value) || 50;
 
         fetchBtn.disabled = true;
-        addLog(`加载 ${instId} ${bar} ${limit}根...`);
-
-        const originalUrl = `https://www.okx.com/api/v5/market/candles?instId=${instId}&bar=${bar}&limit=${limit}`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(originalUrl)}`;
+        addLog(`加载 ${instId} ${bar} ${totalLimit}根...`);
 
         try {
-            const resp = await fetch(proxyUrl);
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            const json = await resp.json();
-            if (json.code !== '0') throw new Error(json.msg);
-            // OKX返回的数据是时间倒序（最新在前），我们需要反转成从旧到新
-            const raw = json.data;
-            allKlines = raw.reverse();  // 现在是从旧到新
+            // 调用分页获取函数
+            const data = await fetchAllKlines(instId, bar, totalLimit);
+            if (data.length === 0) {
+                addLog('未获取到数据', false);
+                return;
+            }
+
+            allKlines = data;
             totalKlines = allKlines.length;
-            currentIndex = 0;            // 重置到第一根
+            currentIndex = 0;
             account.balance = account.initBalance;
             account.position = null;
+            buyMarks = [];
+            sellMarks = [];
 
             addLog(`成功加载 ${totalKlines} 根K线`, true);
             renderChart();
@@ -569,53 +569,67 @@
         }
     }
 
-    // --- 前进到下一根K线 ---
+    // 前进到下一根
     function advanceToNext() {
         if (currentIndex < totalKlines - 1) {
             currentIndex++;
             renderChart();
             refreshUI();
         } else {
-            addLog('已经是最后一根K线，无法前进', false);
+            addLog('已是最后一根', false);
         }
     }
 
-    // --- 交易操作 ---
-    function openPosition(direction) {
-        if (!allKlines.length) {
-            addLog('请先加载数据', false);
-            return;
-        }
-        if (account.position) {
-            addLog('已有持仓，请先结算', false);
-            return;
-        }
-        if (currentIndex >= totalKlines - 1) {
-            addLog('已经是最后一根，不能开新仓', false);
-            return;
-        }
+    // 开多
+    function openLong() {
+        if (!allKlines.length) { addLog('请先加载数据', false); return; }
+        if (account.position) { addLog('已有持仓', false); return; }
+        if (currentIndex >= totalKlines - 1) { addLog('已是最后一根，不能开仓', false); return; }
 
-        const currentK = allKlines[currentIndex];
-        const price = parseFloat(currentK[4]); // 收盘价作为开仓价
+        const price = parseFloat(allKlines[currentIndex][4]); // 收盘价
         account.position = {
-            direction: direction,
+            direction: 'long',
             openPrice: price,
             openIndex: currentIndex
         };
-        addLog(`${direction === 'long' ? '买入' : '卖出'} 开仓 @ ${formatPrice(price,4)}`, true);
 
-        // 开仓后自动前进到下一根K线
+        buyMarks.push({ coord: [currentIndex, price] });
+        addLog(`做多开仓 @ ${formatPrice(price,2)}`, true);
         advanceToNext();
     }
 
+    // 开空
+    function openShort() {
+        if (!allKlines.length) { addLog('请先加载数据', false); return; }
+        if (account.position) { addLog('已有持仓', false); return; }
+        if (currentIndex >= totalKlines - 1) { addLog('已是最后一根，不能开仓', false); return; }
+
+        const price = parseFloat(allKlines[currentIndex][4]); // 收盘价
+        account.position = {
+            direction: 'short',
+            openPrice: price,
+            openIndex: currentIndex
+        };
+
+        sellMarks.push({ coord: [currentIndex, price] });
+        addLog(`做空开仓 @ ${formatPrice(price,2)}`, true);
+        advanceToNext();
+    }
+
+    // 平仓
     function closePosition() {
-        if (!account.position) {
-            addLog('没有持仓可结算', false);
-            return;
-        }
+        if (!account.position) { addLog('无持仓', false); return; }
+
         const currentK = allKlines[currentIndex];
         const price = parseFloat(currentK[4]);
         const pos = account.position;
+
+        // 检查是否至少隔了一根K线（不能在同一根或紧接着的下一根平仓）
+        if (currentIndex <= pos.openIndex + 1) {
+            addLog('开仓后至少间隔一根K线才能平仓', false);
+            return;
+        }
+
         let pl = 0;
         if (pos.direction === 'long') {
             pl = price - pos.openPrice;
@@ -624,33 +638,27 @@
         }
         account.balance += pl;
         account.position = null;
-        addLog(`平仓 ${pos.direction==='long'?'多':'空'} 盈亏: ${pl >=0 ? '+' : ''}${pl.toFixed(2)} USDT`, true);
-        refreshUI();  // 只刷新UI，不前进
+        addLog(`平仓盈亏: ${pl >=0 ? '+' : ''}${pl.toFixed(2)}`, true);
+        refreshUI();  // 不前进
     }
 
+    // 观望
     function watch() {
-        if (!allKlines.length) {
-            addLog('请先加载数据', false);
-            return;
-        }
-        if (currentIndex >= totalKlines - 1) {
-            addLog('已经是最后一根，不能观望', false);
-            return;
-        }
+        if (!allKlines.length) { addLog('请先加载数据', false); return; }
+        if (currentIndex >= totalKlines - 1) { addLog('已是最后一根', false); return; }
         addLog('观望，前进到下一根', true);
         advanceToNext();
     }
 
     // --- 事件绑定 ---
     fetchBtn.addEventListener('click', fetchKlines);
-    buyBtn.addEventListener('click', () => openPosition('long'));
-    sellBtn.addEventListener('click', () => openPosition('short'));
+    buyBtn.addEventListener('click', openLong);
+    sellBtn.addEventListener('click', openShort);
     watchBtn.addEventListener('click', watch);
     settleBtn.addEventListener('click', closePosition);
 
     // 初始化图表
     chart = echarts.init(document.getElementById('klineChart'));
-    // 不自动加载，等待用户点击“开始训练”
 })();
 </script>
 </body>
