@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>K线模拟训练 · 分页获取版</title>
+    <title>K线模拟训练 · 第二根可平 + 文字标记</title>
     <!-- ECharts 5 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <!-- Font Awesome -->
@@ -265,7 +265,7 @@
     </div>
 
     <div class="footer-note">
-        ⚡ 买入=开多，卖出=开空，平仓=平当前仓 · 自动分页获取，可请求最多300根
+        ⚡ 买入=开多，卖出=开空，平仓=平当前仓 · 开仓后下一根即可平仓 · 文字标记
     </div>
 </div>
 
@@ -308,9 +308,8 @@
     };
     let totalKlines = 0;
 
-    // 记录买卖点标记数据
-    let buyMarks = [];   // 开多点 { coord: [index, price] }
-    let sellMarks = [];  // 开空点
+    // 记录买卖点标记数据（带方向）
+    let marks = []; // 每个元素 { index, price, direction }
 
     // --- 工具函数 ---
     function addLog(msg, isSuccess = true) {
@@ -402,7 +401,7 @@
         settleBtn.disabled = !hasPosition;
     }
 
-    // 渲染图表（包含买卖标记）
+    // 渲染图表（包含文字标记）
     function renderChart() {
         if (!chart || !allKlines.length) return;
 
@@ -415,29 +414,31 @@
             parseFloat(item[1]), parseFloat(item[4]), parseFloat(item[3]), parseFloat(item[2])
         ]);
 
-        // 准备标记点数据
+        // 准备标记点数据（显示文字“多”或“空”）
         const markPointData = [];
-        buyMarks.forEach(m => {
-            if (m.coord[0] <= currentIndex) {
+        marks.forEach(m => {
+            if (m.index <= currentIndex) {
                 markPointData.push({
-                    coord: [m.coord[0], m.coord[1]],
-                    name: 'B',
-                    symbol: 'arrow',
-                    symbolSize: 20,
-                    symbolRotate: 0,
-                    itemStyle: { color: '#2ecc71' }
-                });
-            }
-        });
-        sellMarks.forEach(m => {
-            if (m.coord[0] <= currentIndex) {
-                markPointData.push({
-                    coord: [m.coord[0], m.coord[1]],
-                    name: 'S',
-                    symbol: 'arrow',
-                    symbolSize: 20,
-                    symbolRotate: 180,
-                    itemStyle: { color: '#e74c3c' }
+                    coord: [m.index, m.price],
+                    name: m.direction === 'long' ? '多' : '空',
+                    symbol: 'circle',          // 改为圆形，更干净
+                    symbolSize: 16,
+                    itemStyle: {
+                        color: m.direction === 'long' ? '#2ecc71' : '#e74c3c',
+                        borderColor: '#ffffff',
+                        borderWidth: 1
+                    },
+                    label: {
+                        show: true,
+                        formatter: m.direction === 'long' ? '多' : '空',
+                        position: 'top',
+                        color: 'white',
+                        fontSize: 10,
+                        fontWeight: 'bold',
+                        backgroundColor: m.direction === 'long' ? '#2ecc71' : '#e74c3c',
+                        padding: [2, 4],
+                        borderRadius: 4
+                    }
                 });
             }
         });
@@ -467,9 +468,18 @@
                 },
                 markPoint: {
                     data: markPointData,
-                    symbol: 'arrow',
-                    symbolSize: 20,
-                    label: { show: false }
+                    symbol: 'circle',
+                    symbolSize: 16,
+                    label: {
+                        show: true,
+                        position: 'top',
+                        formatter: (params) => params.name,
+                        backgroundColor: 'auto',
+                        padding: [2, 4],
+                        borderRadius: 4,
+                        fontSize: 10,
+                        color: 'white'
+                    }
                 }
             }]
         };
@@ -504,33 +514,25 @@
                 const batch = json.data; // 最新在前
                 if (!batch || batch.length === 0) break; // 无更多数据
 
-                // 将这一批数据追加到 allData（注意顺序，我们最终要正序）
-                // 当前 batch 是最新在前，我们需要的是从旧到新，所以先反转再合并？
-                // 由于我们是从最新开始往前取，每次取到的 batch 都是越来越早的。
-                // 最终 allData 顺序应该是从旧到新，所以我们应该将新获取的 batch（更早的数据）放在前面。
-                // 简便方法：先收集所有批次，最后统一反转。
                 allData = allData.concat(batch);
 
                 // 设置下一次的 before 为这一批最旧的一条的时间戳（即 batch 最后一条）
                 if (batch.length > 0) {
-                    before = batch[batch.length - 1][0]; // 取最早的那条的时间戳
+                    before = batch[batch.length - 1][0];
                 }
 
                 remaining -= batch.length;
                 addLog(`已获取 ${allData.length} 根...`);
 
-                // 如果返回的数量少于请求的 limit，说明没有更多数据了
                 if (batch.length < limit) break;
             } catch (e) {
                 addLog(`分页请求失败: ${e.message}`, false);
-                throw e; // 终止
+                throw e;
             }
         }
 
-        // 合并后的 allData 顺序：最早的在最后（因为我们每次 concat 是把更早的放在后面）
-        // 例如第一次请求到最近50根，第二次请求到前50根，allData = [最近50根, 前50根]（按请求顺序）
-        // 我们需要的是从旧到新，所以反转整个数组
-        const reversed = allData.reverse(); // 现在是从旧到新
+        // 合并后的 allData 顺序：最早的在最后，反转得到从旧到新
+        const reversed = allData.reverse();
         return reversed;
     }
 
@@ -544,7 +546,6 @@
         addLog(`加载 ${instId} ${bar} ${totalLimit}根...`);
 
         try {
-            // 调用分页获取函数
             const data = await fetchAllKlines(instId, bar, totalLimit);
             if (data.length === 0) {
                 addLog('未获取到数据', false);
@@ -556,8 +557,7 @@
             currentIndex = 0;
             account.balance = account.initBalance;
             account.position = null;
-            buyMarks = [];
-            sellMarks = [];
+            marks = [];
 
             addLog(`成功加载 ${totalKlines} 根K线`, true);
             renderChart();
@@ -593,7 +593,7 @@
             openIndex: currentIndex
         };
 
-        buyMarks.push({ coord: [currentIndex, price] });
+        marks.push({ index: currentIndex, price: price, direction: 'long' });
         addLog(`做多开仓 @ ${formatPrice(price,2)}`, true);
         advanceToNext();
     }
@@ -611,12 +611,12 @@
             openIndex: currentIndex
         };
 
-        sellMarks.push({ coord: [currentIndex, price] });
+        marks.push({ index: currentIndex, price: price, direction: 'short' });
         addLog(`做空开仓 @ ${formatPrice(price,2)}`, true);
         advanceToNext();
     }
 
-    // 平仓
+    // 平仓（修改条件：允许下一根平仓）
     function closePosition() {
         if (!account.position) { addLog('无持仓', false); return; }
 
@@ -624,9 +624,11 @@
         const price = parseFloat(currentK[4]);
         const pos = account.position;
 
-        // 检查是否至少隔了一根K线（不能在同一根或紧接着的下一根平仓）
-        if (currentIndex <= pos.openIndex + 1) {
-            addLog('开仓后至少间隔一根K线才能平仓', false);
+        // 修改条件：仅禁止同一根K线平仓（即允许下一根平仓）
+        // 原条件 currentIndex <= pos.openIndex + 1 表示需要间隔一根
+        // 现改为 currentIndex <= pos.openIndex 表示不能在同一根平仓
+        if (currentIndex <= pos.openIndex) {
+            addLog('开仓后至少需要到下一根K线才能平仓', false);
             return;
         }
 
