@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>K线模拟训练 · 成交量 + 文字标记 + 自动滚动</title>
+    <title>K线模拟训练 · 成交量 + EMA均线 + 文字标记</title>
     <!-- ECharts 5 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <!-- Font Awesome -->
@@ -103,7 +103,7 @@
             padding: 10px;
             margin-bottom: 14px;
         }
-        #klineChart { width: 100%; height: 360px; } /* 增加高度容纳成交量图 */
+        #klineChart { width: 100%; height: 360px; }
 
         .info-panel {
             background: #1b1d29;
@@ -218,7 +218,7 @@
         </div>
     </div>
 
-    <!-- K线图 + 成交量 -->
+    <!-- K线图 + 成交量 + EMA -->
     <div class="chart-card">
         <div id="klineChart"></div>
         <div class="kline-index" id="klineIndex">第 1 / 50 根</div>
@@ -265,7 +265,7 @@
     </div>
 
     <div class="footer-note">
-        ⚡ 买入=开多，卖出=开空，平仓=平当前仓 · 开仓后下一根即可平仓 · 文字标记，自动滚动
+        ⚡ EMA5(白), EMA10(黄), EMA20(紫), EMA30(蓝) · 开仓后下一根即可平仓
     </div>
 </div>
 
@@ -328,6 +328,17 @@
     }
     function formatMoney(val) {
         return parseFloat(val).toFixed(2);
+    }
+
+    // --- EMA计算函数 ---
+    function calculateEMA(data, period) {
+        if (data.length === 0) return [];
+        let k = 2 / (period + 1);
+        let ema = [data[0]]; // 第一根EMA取第一根收盘价
+        for (let i = 1; i < data.length; i++) {
+            ema.push(data[i] * k + ema[i-1] * (1 - k));
+        }
+        return ema;
     }
 
     // 更新UI
@@ -398,7 +409,7 @@
         settleBtn.disabled = !hasPosition;
     }
 
-    // 渲染图表（包含成交量、文字标记、自动滚动）
+    // 渲染图表（包含成交量、文字标记、EMA均线、自动滚动）
     function renderChart() {
         if (!chart || !allKlines.length) return;
 
@@ -412,6 +423,15 @@
         ]);
         const volumes = sliced.map(item => parseFloat(item[5]));
 
+        // 收盘价序列
+        const closes = sliced.map(item => parseFloat(item[4]));
+
+        // 计算EMA
+        const ema5 = calculateEMA(closes, 5);
+        const ema10 = calculateEMA(closes, 10);
+        const ema20 = calculateEMA(closes, 20);
+        const ema30 = calculateEMA(closes, 30);
+
         // 准备标记点数据（只显示文字，无点）
         const markPointData = [];
         marks.forEach(m => {
@@ -419,7 +439,7 @@
                 markPointData.push({
                     coord: [m.index, m.price],
                     name: m.direction === 'long' ? '多' : '空',
-                    symbol: 'none',  // 不显示任何点
+                    symbol: 'none',
                     label: {
                         show: true,
                         formatter: m.direction === 'long' ? '多' : '空',
@@ -469,8 +489,8 @@
                     },
                     markPoint: {
                         data: markPointData,
-                        symbol: 'none',  // 全局不显示点
-                        label: { show: true } // 但每个点的label单独控制
+                        symbol: 'none',
+                        label: { show: true }
                     }
                 },
                 {
@@ -481,15 +501,55 @@
                     yAxisIndex: 1,
                     itemStyle: {
                         color: (params) => {
-                            // 根据K线涨跌颜色
                             const kIdx = params.dataIndex;
                             if (kIdx < kValues.length) {
                                 const k = kValues[kIdx];
-                                return k[0] <= k[1] ? '#2ecc71' : '#e74c3c'; // 开<=收 为涨（绿）
+                                return k[0] <= k[1] ? '#2ecc71' : '#e74c3c';
                             }
                             return '#5d68e4';
                         }
                     }
+                },
+                // EMA均线
+                {
+                    name: 'EMA5',
+                    type: 'line',
+                    data: ema5,
+                    xAxisIndex: 0,
+                    yAxisIndex: 0,
+                    lineStyle: { color: '#ffffff', width: 1.5 },
+                    showSymbol: false,
+                    smooth: true
+                },
+                {
+                    name: 'EMA10',
+                    type: 'line',
+                    data: ema10,
+                    xAxisIndex: 0,
+                    yAxisIndex: 0,
+                    lineStyle: { color: '#f1c40f', width: 1.5 }, // 黄色
+                    showSymbol: false,
+                    smooth: true
+                },
+                {
+                    name: 'EMA20',
+                    type: 'line',
+                    data: ema20,
+                    xAxisIndex: 0,
+                    yAxisIndex: 0,
+                    lineStyle: { color: '#9b59b6', width: 1.5 }, // 紫色
+                    showSymbol: false,
+                    smooth: true
+                },
+                {
+                    name: 'EMA30',
+                    type: 'line',
+                    data: ema30,
+                    xAxisIndex: 0,
+                    yAxisIndex: 0,
+                    lineStyle: { color: '#3498db', width: 1.5 }, // 蓝色
+                    showSymbol: false,
+                    smooth: true
                 }
             ],
             dataZoom: [
@@ -498,7 +558,7 @@
                     xAxisIndex: [0, 1],
                     start: 0,
                     end: 100,
-                    zoomOnMouseWheel: false  // 禁用缩放，只保留滚动
+                    zoomOnMouseWheel: false
                 }
             ]
         };
@@ -508,10 +568,9 @@
         // 自动滚动到最新K线（使当前K线位于最右侧）
         setTimeout(() => {
             if (chart) {
-                // 计算start使得当前索引位于右侧约80%的位置
                 const total = sliced.length;
                 if (total > 10) {
-                    const start = Math.max(0, ((currentIndex - 8) / total) * 100); // 让当前K线在右侧，显示最近约8根
+                    const start = Math.max(0, ((currentIndex - 8) / total) * 100);
                     chart.dispatchAction({
                         type: 'dataZoom',
                         start: start,
@@ -522,7 +581,7 @@
         }, 50);
     }
 
-    // --- 分页获取K线数据 ---
+    // --- 分页获取K线数据（增强稳定性）---
     async function fetchAllKlines(instId, bar, totalLimit) {
         const batchSize = 50;
         let allData = [];
@@ -538,31 +597,44 @@
                 url += `&before=${before}`;
             }
 
-            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            // 使用多个代理轮流尝试，提高成功率
+            const proxies = [
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+                `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                `https://cors-anywhere.herokuapp.com/${url}`
+            ];
 
-            try {
-                const resp = await fetch(proxyUrl);
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                const json = await resp.json();
-                if (json.code !== '0') throw new Error(json.msg);
+            let success = false;
+            let lastError = null;
 
-                const batch = json.data;
-                if (!batch || batch.length === 0) break;
-
-                allData = allData.concat(batch);
-
-                if (batch.length > 0) {
-                    before = batch[batch.length - 1][0];
+            for (const proxyUrl of proxies) {
+                try {
+                    const resp = await fetch(proxyUrl);
+                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    const json = await resp.json();
+                    if (json.code !== '0') throw new Error(json.msg);
+                    const batch = json.data;
+                    if (batch && batch.length > 0) {
+                        allData = allData.concat(batch);
+                        if (batch.length > 0) {
+                            before = batch[batch.length - 1][0];
+                        }
+                        remaining -= batch.length;
+                        addLog(`已获取 ${allData.length} 根...`);
+                        success = true;
+                        break; // 成功则跳出代理循环
+                    }
+                } catch (e) {
+                    lastError = e;
+                    // 继续尝试下一个代理
                 }
-
-                remaining -= batch.length;
-                addLog(`已获取 ${allData.length} 根...`);
-
-                if (batch.length < limit) break;
-            } catch (e) {
-                addLog(`分页请求失败: ${e.message}`, false);
-                throw e;
             }
+
+            if (!success) {
+                throw new Error(`所有代理均失败: ${lastError?.message || '未知错误'}`);
+            }
+
+            if (batchSize > 0 && allData.length >= totalLimit) break;
         }
 
         const reversed = allData.reverse();
@@ -597,6 +669,7 @@
             refreshUI();
         } catch (e) {
             addLog(`加载失败: ${e.message}`, false);
+            console.error(e);
         } finally {
             fetchBtn.disabled = false;
         }
@@ -657,7 +730,6 @@
         const price = parseFloat(currentK[4]);
         const pos = account.position;
 
-        // 仅禁止同一根K线平仓
         if (currentIndex <= pos.openIndex) {
             addLog('开仓后至少需要到下一根K线才能平仓', false);
             return;
