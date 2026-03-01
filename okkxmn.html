@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>K线模拟训练 · 第二根可平 + 文字标记</title>
+    <title>K线模拟训练 · 成交量 + 文字标记 + 自动滚动</title>
     <!-- ECharts 5 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <!-- Font Awesome -->
@@ -103,7 +103,7 @@
             padding: 10px;
             margin-bottom: 14px;
         }
-        #klineChart { width: 100%; height: 280px; }
+        #klineChart { width: 100%; height: 360px; } /* 增加高度容纳成交量图 */
 
         .info-panel {
             background: #1b1d29;
@@ -218,7 +218,7 @@
         </div>
     </div>
 
-    <!-- K线图 -->
+    <!-- K线图 + 成交量 -->
     <div class="chart-card">
         <div id="klineChart"></div>
         <div class="kline-index" id="klineIndex">第 1 / 50 根</div>
@@ -246,7 +246,7 @@
         <span>开仓K线: <span id="posIndex">0</span></span>
     </div>
 
-    <!-- 四个主要按钮（已修改文字） -->
+    <!-- 四个主要按钮 -->
     <div class="button-grid">
         <button class="btn btn-success" id="buyBtn"><i class="fas fa-arrow-up"></i> 买入（多）</button>
         <button class="btn btn-danger" id="sellBtn"><i class="fas fa-arrow-down"></i> 卖出（空）</button>
@@ -265,7 +265,7 @@
     </div>
 
     <div class="footer-note">
-        ⚡ 买入=开多，卖出=开空，平仓=平当前仓 · 开仓后下一根即可平仓 · 文字标记
+        ⚡ 买入=开多，卖出=开空，平仓=平当前仓 · 开仓后下一根即可平仓 · 文字标记，自动滚动
     </div>
 </div>
 
@@ -392,16 +392,13 @@
         const canAdvance = currentIndex < totalKlines - 1; // 还有下一根才能前进（开仓/观望需要前进）
         const hasPosition = account.position !== null;
 
-        // 买入/卖出开仓：只能在没有持仓并且还有下一根时使用
         buyBtn.disabled = !canAdvance || hasPosition;
         sellBtn.disabled = !canAdvance || hasPosition;
-        // 观望：只要还有下一根
         watchBtn.disabled = !canAdvance;
-        // 平仓：只要有持仓
         settleBtn.disabled = !hasPosition;
     }
 
-    // 渲染图表（包含文字标记）
+    // 渲染图表（包含成交量、文字标记、自动滚动）
     function renderChart() {
         if (!chart || !allKlines.length) return;
 
@@ -413,31 +410,28 @@
         const kValues = sliced.map(item => [
             parseFloat(item[1]), parseFloat(item[4]), parseFloat(item[3]), parseFloat(item[2])
         ]);
+        const volumes = sliced.map(item => parseFloat(item[5]));
 
-        // 准备标记点数据（显示文字“多”或“空”）
+        // 准备标记点数据（只显示文字，无点）
         const markPointData = [];
         marks.forEach(m => {
             if (m.index <= currentIndex) {
                 markPointData.push({
                     coord: [m.index, m.price],
                     name: m.direction === 'long' ? '多' : '空',
-                    symbol: 'circle',          // 改为圆形，更干净
-                    symbolSize: 16,
-                    itemStyle: {
-                        color: m.direction === 'long' ? '#2ecc71' : '#e74c3c',
-                        borderColor: '#ffffff',
-                        borderWidth: 1
-                    },
+                    symbol: 'none',  // 不显示任何点
                     label: {
                         show: true,
                         formatter: m.direction === 'long' ? '多' : '空',
                         position: 'top',
                         color: 'white',
-                        fontSize: 10,
+                        fontSize: 11,
                         fontWeight: 'bold',
                         backgroundColor: m.direction === 'long' ? '#2ecc71' : '#e74c3c',
-                        padding: [2, 4],
-                        borderRadius: 4
+                        padding: [2, 5],
+                        borderRadius: 4,
+                        borderColor: '#ffffff',
+                        borderWidth: 1
                     }
                 });
             }
@@ -447,50 +441,92 @@
             backgroundColor: '#1b1d29',
             animation: false,
             tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
-            xAxis: {
-                type: 'category',
-                data: dates,
-                axisLabel: { rotate: 30, color: '#aaa', fontSize: 8 }
-            },
-            yAxis: {
-                scale: true,
-                axisLabel: { color: '#aaa', fontSize: 8 }
-            },
-            series: [{
-                name: 'K线',
-                type: 'candlestick',
-                data: kValues,
-                itemStyle: {
-                    color: '#2ecc71',
-                    color0: '#e74c3c',
-                    borderColor: '#2ecc71',
-                    borderColor0: '#e74c3c'
+            legend: { show: false },
+            grid: [
+                { left: '3%', right: '3%', top: '5%', height: '60%' },  // 主图
+                { left: '3%', right: '3%', top: '70%', height: '20%' }   // 成交量图
+            ],
+            xAxis: [
+                { type: 'category', data: dates, gridIndex: 0, axisLabel: { rotate: 30, color: '#aaa', fontSize: 8 } },
+                { type: 'category', data: dates, gridIndex: 1, axisLabel: { show: false } }
+            ],
+            yAxis: [
+                { gridIndex: 0, scale: true, axisLabel: { color: '#aaa', fontSize: 8 } },
+                { gridIndex: 1, name: '成交量', axisLabel: { color: '#aaa', fontSize: 8 } }
+            ],
+            series: [
+                {
+                    name: 'K线',
+                    type: 'candlestick',
+                    data: kValues,
+                    xAxisIndex: 0,
+                    yAxisIndex: 0,
+                    itemStyle: {
+                        color: '#2ecc71',
+                        color0: '#e74c3c',
+                        borderColor: '#2ecc71',
+                        borderColor0: '#e74c3c'
+                    },
+                    markPoint: {
+                        data: markPointData,
+                        symbol: 'none',  // 全局不显示点
+                        label: { show: true } // 但每个点的label单独控制
+                    }
                 },
-                markPoint: {
-                    data: markPointData,
-                    symbol: 'circle',
-                    symbolSize: 16,
-                    label: {
-                        show: true,
-                        position: 'top',
-                        formatter: (params) => params.name,
-                        backgroundColor: 'auto',
-                        padding: [2, 4],
-                        borderRadius: 4,
-                        fontSize: 10,
-                        color: 'white'
+                {
+                    name: '成交量',
+                    type: 'bar',
+                    data: volumes,
+                    xAxisIndex: 1,
+                    yAxisIndex: 1,
+                    itemStyle: {
+                        color: (params) => {
+                            // 根据K线涨跌颜色
+                            const kIdx = params.dataIndex;
+                            if (kIdx < kValues.length) {
+                                const k = kValues[kIdx];
+                                return k[0] <= k[1] ? '#2ecc71' : '#e74c3c'; // 开<=收 为涨（绿）
+                            }
+                            return '#5d68e4';
+                        }
                     }
                 }
-            }]
+            ],
+            dataZoom: [
+                {
+                    type: 'inside',
+                    xAxisIndex: [0, 1],
+                    start: 0,
+                    end: 100,
+                    zoomOnMouseWheel: false  // 禁用缩放，只保留滚动
+                }
+            ]
         };
+
         chart.setOption(option);
+
+        // 自动滚动到最新K线（使当前K线位于最右侧）
+        setTimeout(() => {
+            if (chart) {
+                // 计算start使得当前索引位于右侧约80%的位置
+                const total = sliced.length;
+                if (total > 10) {
+                    const start = Math.max(0, ((currentIndex - 8) / total) * 100); // 让当前K线在右侧，显示最近约8根
+                    chart.dispatchAction({
+                        type: 'dataZoom',
+                        start: start,
+                        end: 100
+                    });
+                }
+            }
+        }, 50);
     }
 
     // --- 分页获取K线数据 ---
     async function fetchAllKlines(instId, bar, totalLimit) {
-        const batchSize = 50; // 每次请求50根
+        const batchSize = 50;
         let allData = [];
-        let before = null;     // 用于分页的参数（获取更早的数据）
+        let before = null;
         let remaining = totalLimit;
 
         addLog(`开始分页获取，目标 ${totalLimit} 根...`);
@@ -499,10 +535,9 @@
             const limit = Math.min(batchSize, remaining);
             let url = `https://www.okx.com/api/v5/market/candles?instId=${instId}&bar=${bar}&limit=${limit}`;
             if (before) {
-                url += `&before=${before}`; // 获取 before 时间戳之前的数据
+                url += `&before=${before}`;
             }
 
-            // 使用代理
             const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 
             try {
@@ -511,12 +546,11 @@
                 const json = await resp.json();
                 if (json.code !== '0') throw new Error(json.msg);
 
-                const batch = json.data; // 最新在前
-                if (!batch || batch.length === 0) break; // 无更多数据
+                const batch = json.data;
+                if (!batch || batch.length === 0) break;
 
                 allData = allData.concat(batch);
 
-                // 设置下一次的 before 为这一批最旧的一条的时间戳（即 batch 最后一条）
                 if (batch.length > 0) {
                     before = batch[batch.length - 1][0];
                 }
@@ -531,7 +565,6 @@
             }
         }
 
-        // 合并后的 allData 顺序：最早的在最后，反转得到从旧到新
         const reversed = allData.reverse();
         return reversed;
     }
@@ -586,7 +619,7 @@
         if (account.position) { addLog('已有持仓', false); return; }
         if (currentIndex >= totalKlines - 1) { addLog('已是最后一根，不能开仓', false); return; }
 
-        const price = parseFloat(allKlines[currentIndex][4]); // 收盘价
+        const price = parseFloat(allKlines[currentIndex][4]);
         account.position = {
             direction: 'long',
             openPrice: price,
@@ -604,7 +637,7 @@
         if (account.position) { addLog('已有持仓', false); return; }
         if (currentIndex >= totalKlines - 1) { addLog('已是最后一根，不能开仓', false); return; }
 
-        const price = parseFloat(allKlines[currentIndex][4]); // 收盘价
+        const price = parseFloat(allKlines[currentIndex][4]);
         account.position = {
             direction: 'short',
             openPrice: price,
@@ -616,7 +649,7 @@
         advanceToNext();
     }
 
-    // 平仓（修改条件：允许下一根平仓）
+    // 平仓（允许下一根平仓）
     function closePosition() {
         if (!account.position) { addLog('无持仓', false); return; }
 
@@ -624,9 +657,7 @@
         const price = parseFloat(currentK[4]);
         const pos = account.position;
 
-        // 修改条件：仅禁止同一根K线平仓（即允许下一根平仓）
-        // 原条件 currentIndex <= pos.openIndex + 1 表示需要间隔一根
-        // 现改为 currentIndex <= pos.openIndex 表示不能在同一根平仓
+        // 仅禁止同一根K线平仓
         if (currentIndex <= pos.openIndex) {
             addLog('开仓后至少需要到下一根K线才能平仓', false);
             return;
@@ -641,7 +672,7 @@
         account.balance += pl;
         account.position = null;
         addLog(`平仓盈亏: ${pl >=0 ? '+' : ''}${pl.toFixed(2)}`, true);
-        refreshUI();  // 不前进
+        refreshUI();
     }
 
     // 观望
