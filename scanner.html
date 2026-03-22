@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>永续合约涨跌幅扫描器 | 实时涨幅/跌幅最大合约</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 32px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .sub {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 32px;
+            font-size: 0.9rem;
+        }
+
+        .cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            justify-content: center;
+        }
+
+        .card {
+            flex: 1;
+            min-width: 280px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 28px;
+            padding: 24px 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transition: transform 0.2s ease;
+            text-align: center;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card.gain {
+            border-top: 6px solid #00c853;
+        }
+
+        .card.loss {
+            border-top: 6px solid #ff3b30;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1e2a3a;
+        }
+
+        .symbol {
+            font-size: 2rem;
+            font-weight: 800;
+            background: #f0f2f5;
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 60px;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+            word-break: break-word;
+        }
+
+        .percentage {
+            font-size: 2.4rem;
+            font-weight: 800;
+            margin: 16px 0;
+        }
+
+        .gain .percentage {
+            color: #00c853;
+        }
+
+        .loss .percentage {
+            color: #ff3b30;
+        }
+
+        .price {
+            font-size: 1.2rem;
+            color: #2c3e50;
+            margin: 8px 0;
+        }
+
+        .vol {
+            font-size: 0.85rem;
+            color: #5a6e7c;
+            margin-top: 12px;
+        }
+
+        .update-time {
+            text-align: center;
+            margin-top: 32px;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .loading, .error {
+            text-align: center;
+            color: white;
+            padding: 40px;
+            font-size: 1.2rem;
+        }
+
+        .error {
+            color: #ffaa88;
+        }
+
+        button {
+            display: block;
+            margin: 20px auto 0;
+            background: #2c5364;
+            border: none;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #1e3a4a;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 永续合约 24h 涨跌幅扫描</h1>
+    <div class="sub">实时获取全市场涨幅最大 / 跌幅最大合约</div>
+
+    <div id="content">
+        <div class="loading">⏳ 正在加载市场数据...</div>
+    </div>
+
+    <div class="update-time" id="updateTime"></div>
+    <button id="refreshBtn">🔄 手动刷新</button>
+    <footer>数据来自欧易公开API | 自动每30秒刷新</footer>
+</div>
+
+<script>
+    // 欧易 API 端点（永续合约全市场行情）
+    const API_URL = 'https://www.okx.com/api/v5/market/tickers';
+    const INST_TYPE = 'SWAP';   // 永续合约
+
+    let autoRefreshInterval = null;
+
+    // 获取数据并更新页面
+    async function fetchAndDisplay() {
+        const contentDiv = document.getElementById('content');
+        const updateTimeSpan = document.getElementById('updateTime');
+        
+        // 显示加载中
+        contentDiv.innerHTML = '<div class="loading">⏳ 正在拉取全市场数据...</div>';
+        
+        try {
+            const url = `${API_URL}?instType=${INST_TYPE}`;
+            const response = await fetch(url);
+            const result = await response.json();
+            
+            if (result.code !== '0') {
+                throw new Error(result.msg || 'API 返回错误');
+            }
+            
+            const tickers = result.data;
+            if (!tickers || tickers.length === 0) {
+                throw new Error('没有获取到合约数据');
+            }
+            
+            // 过滤出有涨跌幅数据的合约，并转换为数值
+            const valid = tickers.filter(t => t.changePercentage24h !== undefined && t.changePercentage24h !== null)
+                                 .map(t => ({
+                                     instId: t.instId,
+                                     last: t.last,
+                                     change24h: t.change24h,
+                                     changePercentage24h: parseFloat(t.changePercentage24h),
+                                     vol24h: t.vol24h,
+                                     volCcy24h: t.volCcy24h,
+                                     ts: t.ts
+                                 }));
+            
+            if (valid.length === 0) {
+                throw new Error('所有合约均无涨跌幅数据');
+            }
+            
+            // 按涨跌幅排序（降序）
+            const sorted = [...valid].sort((a, b) => b.changePercentage24h - a.changePercentage24h);
+            const topGain = sorted[0];
+            const topLoss = sorted[sorted.length - 1];
+            
+            // 生成卡片 HTML
+            const gainCard = createCard(topGain, 'gain', '📈 涨幅最大');
+            const lossCard = createCard(topLoss, 'loss', '📉 跌幅最大');
+            
+            contentDiv.innerHTML = `
+                <div class="cards">
+                    ${gainCard}
+                    ${lossCard}
+                </div>
+            `;
+            
+            // 更新时间显示
+            const now = new Date();
+            updateTimeSpan.innerHTML = `最后更新: ${now.toLocaleTimeString()} | 共扫描 ${valid.length} 个永续合约`;
+            
+        } catch (err) {
+            console.error(err);
+            contentDiv.innerHTML = `<div class="error">❌ 加载失败: ${err.message}<br>请检查网络后点击下方按钮重试</div>`;
+            updateTimeSpan.innerHTML = '';
+        }
+    }
+    
+    // 生成单个卡片 HTML
+    function createCard(contract, type, labelText) {
+        if (!contract) return '';
+        
+        const changePercent = contract.changePercentage24h.toFixed(2);
+        const percentSign = changePercent >= 0 ? '+' : '';
+        const price = parseFloat(contract.last).toFixed(contract.last.includes('.') ? 4 : 2);
+        const volume = formatVolume(contract.vol24h);
+        
+        return `
+            <div class="card ${type}">
+                <div class="card-title">${labelText}</div>
+                <div class="symbol">${contract.instId}</div>
+                <div class="percentage">${percentSign}${changePercent}%</div>
+                <div class="price">💰 最新价: ${price} USDT</div>
+                <div class="vol">📊 24h 成交量: ${volume}</div>
+            </div>
+        `;
+    }
+    
+    // 格式化成交量（大数转万/亿）
+    function formatVolume(vol) {
+        if (!vol) return '0';
+        const num = parseFloat(vol);
+        if (isNaN(num)) return vol;
+        if (num >= 1e8) return (num / 1e8).toFixed(2) + ' 亿';
+        if (num >= 1e4) return (num / 1e4).toFixed(2) + ' 万';
+        return num.toFixed(2);
+    }
+    
+    // 启动自动刷新（30秒）
+    function startAutoRefresh() {
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        autoRefreshInterval = setInterval(() => {
+            fetchAndDisplay();
+        }, 30000);
+    }
+    
+    // 页面初始化
+    async function init() {
+        await fetchAndDisplay();
+        startAutoRefresh();
+        
+        // 绑定手动刷新按钮
+        const refreshBtn = document.getElementById('refreshBtn');
+        refreshBtn.addEventListener('click', () => {
+            fetchAndDisplay();
+        });
+    }
+    
+    // 页面卸载时清除定时器
+    window.addEventListener('beforeunload', () => {
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+    });
+    
+    // 启动
+    init();
+</script>
+</body>
+</html>
