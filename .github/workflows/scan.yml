@@ -1,0 +1,76 @@
+name: 永续合约涨跌幅扫描
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # 每5分钟执行一次
+  workflow_dispatch:         # 允许手动触发
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: 使用 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: 安装依赖（仅需 curl，但用 node 更方便）
+        run: |
+          # 直接使用 curl 或 node 脚本，这里用 node 脚本处理数据
+          cat > fetch.js << 'EOF'
+          const https = require('https');
+          const fs = require('fs');
+
+          const API_URL = 'https://www.okx.com/api/v5/market/tickers?instType=SWAP';
+
+          https.get(API_URL, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+              try {
+                const json = JSON.parse(data);
+                if (json.code !== '0') throw new Error(json.msg);
+                const tickers = json.data;
+                const valid = tickers.filter(t => t.changePercentage24h !== undefined && t.changePercentage24h !== null)
+                                     .map(t => ({
+                                       instId: t.instId,
+                                       last: t.last,
+                                       changePercentage24h: parseFloat(t.changePercentage24h),
+                                       vol24h: t.vol24h
+                                     }));
+                if (valid.length === 0) throw new Error('无有效数据');
+                const sorted = valid.sort((a,b) => b.changePercentage24h - a.changePercentage24h);
+                const result = {
+                  timestamp: new Date().toISOString(),
+                  total: valid.length,
+                  topGain: sorted[0],
+                  topLoss: sorted[sorted.length - 1]
+                };
+                fs.writeFileSync('data/latest.json', JSON.stringify(result, null, 2));
+                console.log('数据更新成功', result.topGain.instId, result.topLoss.instId);
+              } catch (err) {
+                console.error('处理失败:', err);
+                process.exit(1);
+              }
+            });
+          }).on('error', (err) => {
+            console.error('请求失败:', err);
+            process.exit(1);
+          });
+          EOF
+
+      - name: 运行脚本
+        run: node fetch.js
+
+      - name: 提交更改
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/latest.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "自动更新涨跌幅数据 $(date '+%Y-%m-%d %H:%M:%S')"
+          git push
